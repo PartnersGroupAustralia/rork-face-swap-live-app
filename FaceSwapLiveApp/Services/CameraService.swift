@@ -5,7 +5,14 @@ nonisolated final class CameraService: NSObject, AVCaptureVideoDataOutputSampleB
     private let sessionQueue = DispatchQueue(label: "com.faceswap.session")
     private let videoQueue = DispatchQueue(label: "com.faceswap.video")
     private let videoOutput = AVCaptureVideoDataOutput()
-    private(set) var currentPosition: AVCaptureDevice.Position = .front
+    private let positionLock = NSLock()
+    private var _currentPosition: AVCaptureDevice.Position = .front
+
+    var currentPosition: AVCaptureDevice.Position {
+        positionLock.lock()
+        defer { positionLock.unlock() }
+        return _currentPosition
+    }
 
     var onFrame: ((CMSampleBuffer) -> Void)?
 
@@ -22,7 +29,9 @@ nonisolated final class CameraService: NSObject, AVCaptureVideoDataOutputSampleB
     }
 
     func switchCamera() {
-        currentPosition = (currentPosition == .front) ? .back : .front
+        positionLock.lock()
+        _currentPosition = (_currentPosition == .front) ? .back : .front
+        positionLock.unlock()
         sessionQueue.async { [weak self] in
             self?.configureSession()
         }
@@ -45,7 +54,8 @@ nonisolated final class CameraService: NSObject, AVCaptureVideoDataOutputSampleB
 
         session.sessionPreset = .high
 
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: currentPosition),
+        let position = currentPosition
+        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position),
               let input = try? AVCaptureDeviceInput(device: device) else {
             session.commitConfiguration()
             return

@@ -2,7 +2,8 @@ import SwiftUI
 import AVFoundation
 
 @Observable
-class FaceSwapViewModel {
+@MainActor
+final class FaceSwapViewModel {
     var faceOverlayImage: UIImage?
     var selectedSourceImage: UIImage?
     var detectedFaceRect: CGRect = .zero
@@ -14,7 +15,7 @@ class FaceSwapViewModel {
     var showGallery: Bool = false
     var showNoFaceAlert: Bool = false
     var showCaptureFlash: Bool = false
-    var capturedImages: [UIImage] = []
+    var capturedImages: [CapturedImage] = []
     var viewSize: CGSize = .zero
     var isFrontCamera: Bool = true
     var showDebugOverlay: Bool = false
@@ -24,6 +25,7 @@ class FaceSwapViewModel {
     nonisolated(unsafe) private let engine = FaceSwapEngine()
     nonisolated(unsafe) private var _isProcessing = false
     nonisolated(unsafe) private var _bufferSize: CGSize = .zero
+    nonisolated(unsafe) private var _pendingCapture: CaptureContext?
 
     func startCamera() {
         let engine = self.engine
@@ -48,9 +50,9 @@ class FaceSwapViewModel {
             }
 
             var capturedImage: UIImage?
-            if engine.captureRequested {
-                engine.captureRequested = false
-                capturedImage = engine.compositeCapture(pixelBuffer: pixelBuffer)
+            if let ctx = self._pendingCapture {
+                self._pendingCapture = nil
+                capturedImage = engine.compositeCapture(pixelBuffer: pixelBuffer, context: ctx)
             }
 
             Task { @MainActor [weak self] in
@@ -71,7 +73,7 @@ class FaceSwapViewModel {
                     self.debugLandmarkScreenPoints = []
                 }
                 if let captured = capturedImage {
-                    self.capturedImages.insert(captured, at: 0)
+                    self.capturedImages.insert(CapturedImage(image: captured), at: 0)
                 }
                 self._isProcessing = false
             }
@@ -90,14 +92,13 @@ class FaceSwapViewModel {
         let engine = self.engine
 
         Task.detached {
-            let overlay = engine.processSourceFace(image)
-            let aspectRatio = engine.sourceAspectRatio
+            let result = engine.processSourceFace(image)
             await MainActor.run { [weak self] in
                 guard let self else { return }
                 self.isProcessingFace = false
-                if let overlay {
-                    self.faceOverlayImage = overlay
-                    self.sourceAspectRatio = aspectRatio
+                if let result {
+                    self.faceOverlayImage = result.overlay
+                    self.sourceAspectRatio = result.aspectRatio
                     self.isSwapping = true
                 } else {
                     self.showNoFaceAlert = true
@@ -116,12 +117,15 @@ class FaceSwapViewModel {
     }
 
     func capture() {
-        engine.captureOverlayImage = faceOverlayImage
-        engine.captureOverlayRect = detectedFaceRect
-        engine.captureViewSize = viewSize
-        engine.captureBufferSize = _bufferSize
-        engine.captureIsFrontCamera = isFrontCamera
-        engine.captureRequested = true
+        guard let overlay = faceOverlayImage else { return }
+        _pendingCapture = CaptureContext(
+            overlayImage: overlay,
+            overlayRect: detectedFaceRect,
+            viewSize: viewSize,
+            bufferSize: _bufferSize,
+            isFrontCamera: isFrontCamera,
+            sourceAspectRatio: sourceAspectRatio
+        )
 
         showCaptureFlash = true
         Task {

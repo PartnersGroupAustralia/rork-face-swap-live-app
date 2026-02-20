@@ -12,18 +12,24 @@ nonisolated struct FaceDetectionResult: Sendable {
     let landmarkPoints: [CGPoint]
 }
 
+nonisolated struct FaceProcessingResult: @unchecked Sendable {
+    let overlay: UIImage
+    let aspectRatio: CGFloat
+}
+
+nonisolated struct CaptureContext: @unchecked Sendable {
+    let overlayImage: UIImage
+    let overlayRect: CGRect
+    let viewSize: CGSize
+    let bufferSize: CGSize
+    let isFrontCamera: Bool
+    let sourceAspectRatio: CGFloat
+}
+
 nonisolated final class FaceSwapEngine: @unchecked Sendable {
     private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
-    private(set) var sourceAspectRatio: CGFloat = 1.0
 
-    var captureRequested = false
-    var captureOverlayImage: UIImage?
-    var captureOverlayRect: CGRect = .zero
-    var captureViewSize: CGSize = .zero
-    var captureBufferSize: CGSize = .zero
-    var captureIsFrontCamera: Bool = true
-
-    func processSourceFace(_ image: UIImage) -> UIImage? {
+    func processSourceFace(_ image: UIImage) -> FaceProcessingResult? {
         let normalized = normalizeOrientation(image)
         guard let cgImage = normalized.cgImage else { return nil }
         let ciImage = CIImage(cgImage: cgImage)
@@ -48,11 +54,11 @@ nonisolated final class FaceSwapEngine: @unchecked Sendable {
             .cropped(to: expandedRect)
             .transformed(by: CGAffineTransform(translationX: -expandedRect.origin.x, y: -expandedRect.origin.y))
 
-        let croppedExtent = cropped.extent
-        let centerX = croppedExtent.width / 2
-        let centerY = croppedExtent.height / 2
-        let minDim = min(croppedExtent.width, croppedExtent.height)
-        let maxDim = max(croppedExtent.width, croppedExtent.height)
+        let extent = cropped.extent
+        let centerX = extent.width / 2
+        let centerY = extent.height / 2
+        let minDim = min(extent.width, extent.height)
+        let maxDim = max(extent.width, extent.height)
 
         let gradient = CIFilter.radialGradient()
         gradient.center = CGPoint(x: centerX, y: centerY)
@@ -61,9 +67,9 @@ nonisolated final class FaceSwapEngine: @unchecked Sendable {
         gradient.color0 = CIColor.white
         gradient.color1 = CIColor(red: 0, green: 0, blue: 0, alpha: 0)
 
-        guard let maskImage = gradient.outputImage?.cropped(to: croppedExtent) else { return nil }
+        guard let maskImage = gradient.outputImage?.cropped(to: extent) else { return nil }
 
-        let clearBG = CIImage(color: CIColor(red: 0, green: 0, blue: 0, alpha: 0)).cropped(to: croppedExtent)
+        let clearBG = CIImage(color: CIColor(red: 0, green: 0, blue: 0, alpha: 0)).cropped(to: extent)
 
         guard let blendFilter = CIFilter(name: "CIBlendWithMask") else { return nil }
         blendFilter.setValue(cropped, forKey: kCIInputImageKey)
@@ -73,8 +79,10 @@ nonisolated final class FaceSwapEngine: @unchecked Sendable {
         guard let output = blendFilter.outputImage,
               let resultCG = ciContext.createCGImage(output, from: output.extent) else { return nil }
 
-        sourceAspectRatio = croppedExtent.width / croppedExtent.height
-        return UIImage(cgImage: resultCG)
+        return FaceProcessingResult(
+            overlay: UIImage(cgImage: resultCG),
+            aspectRatio: extent.width / extent.height
+        )
     }
 
     func detectFace(in pixelBuffer: CVPixelBuffer, isFrontCamera: Bool) -> FaceDetectionResult? {
@@ -126,8 +134,8 @@ nonisolated final class FaceSwapEngine: @unchecked Sendable {
         )
     }
 
-    func compositeCapture(pixelBuffer: CVPixelBuffer) -> UIImage? {
-        let orientation: CGImagePropertyOrientation = captureIsFrontCamera ? .leftMirrored : .right
+    func compositeCapture(pixelBuffer: CVPixelBuffer, context: CaptureContext) -> UIImage? {
+        let orientation: CGImagePropertyOrientation = context.isFrontCamera ? .leftMirrored : .right
         let rawCI = CIImage(cvPixelBuffer: pixelBuffer)
         let orientedCI = rawCI.oriented(orientation)
         let ciImage = orientedCI.transformed(by: CGAffineTransform(
@@ -137,19 +145,18 @@ nonisolated final class FaceSwapEngine: @unchecked Sendable {
         let imageExtent = ciImage.extent
         var output = ciImage
 
-        guard let overlay = captureOverlayImage,
-              let overlayCI = CIImage(image: overlay),
-              captureOverlayRect.width > 0,
-              captureViewSize.width > 0,
-              captureBufferSize.width > 0 else {
+        guard let overlayCI = CIImage(image: context.overlayImage),
+              context.overlayRect.width > 0,
+              context.viewSize.width > 0,
+              context.bufferSize.width > 0 else {
             guard let cgImg = ciContext.createCGImage(output, from: imageExtent) else { return nil }
             return UIImage(cgImage: cgImg)
         }
 
-        let bw = captureBufferSize.width
-        let bh = captureBufferSize.height
-        let vw = captureViewSize.width
-        let vh = captureViewSize.height
+        let bw = context.bufferSize.width
+        let bh = context.bufferSize.height
+        let vw = context.viewSize.width
+        let vh = context.viewSize.height
 
         let videoAspect = bw / bh
         let viewAspect = vw / vh
@@ -168,9 +175,9 @@ nonisolated final class FaceSwapEngine: @unchecked Sendable {
             offsetY = (bh * scale - vh) / 2
         }
 
-        let faceRect = captureOverlayRect
+        let faceRect = context.overlayRect
         let expandedWidth = faceRect.width * 1.8
-        let expandedHeight = expandedWidth / sourceAspectRatio
+        let expandedHeight = expandedWidth / context.sourceAspectRatio
 
         let screenCenterX = faceRect.midX
         let screenCenterY = faceRect.midY - faceRect.height * 0.03

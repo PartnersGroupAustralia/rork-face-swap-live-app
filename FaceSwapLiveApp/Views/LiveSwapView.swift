@@ -37,7 +37,6 @@ struct LiveSwapView: View {
             }
         }
         .animation(.spring(duration: 0.3), value: viewModel.showCaptureFlash)
-        .preferredColorScheme(.dark)
         .statusBarHidden()
         .sheet(isPresented: $viewModel.showFaceSelection) {
             FaceSelectionSheet { image in
@@ -101,7 +100,7 @@ struct LiveSwapView: View {
             .position(x: rect.midX, y: rect.midY - rect.height * 0.03)
             .opacity(0.88)
             .allowsHitTesting(false)
-            .animation(.interpolatingSpring(stiffness: 280, damping: 28), value: rect)
+            .animation(.spring(duration: 0.3, bounce: 0.1), value: rect)
     }
 
     private var debugOverlayCanvas: some View {
@@ -285,7 +284,7 @@ struct LiveSwapView: View {
 
             Button { viewModel.showGallery = true } label: {
                 if let lastCapture = viewModel.capturedImages.first {
-                    Image(uiImage: lastCapture)
+                    Image(uiImage: lastCapture.image)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 50, height: 50)

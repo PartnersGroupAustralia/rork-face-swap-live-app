@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct GalleryView: View {
-    let images: [UIImage]
+    let images: [CapturedImage]
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedImage: UIImage?
+    @State private var selectedItem: CapturedImage?
 
     var body: some View {
         NavigationStack {
@@ -21,14 +21,14 @@ struct GalleryView: View {
                             GridItem(.flexible(), spacing: 2),
                             GridItem(.flexible(), spacing: 2)
                         ], spacing: 2) {
-                            ForEach(Array(images.enumerated()), id: \.offset) { _, image in
+                            ForEach(images) { item in
                                 Button {
-                                    selectedImage = image
+                                    selectedItem = item
                                 } label: {
                                     Color(.secondarySystemBackground)
                                         .aspectRatio(1, contentMode: .fit)
                                         .overlay {
-                                            Image(uiImage: image)
+                                            Image(uiImage: item.image)
                                                 .resizable()
                                                 .aspectRatio(contentMode: .fill)
                                                 .allowsHitTesting(false)
@@ -47,19 +47,11 @@ struct GalleryView: View {
                     Button("Done") { dismiss() }
                 }
             }
-            .sheet(item: Binding(
-                get: { selectedImage.map { IdentifiableImage(image: $0) } },
-                set: { selectedImage = $0?.image }
-            )) { item in
+            .sheet(item: $selectedItem) { item in
                 ImageDetailView(image: item.image)
             }
         }
     }
-}
-
-private struct IdentifiableImage: Identifiable {
-    let id = UUID()
-    let image: UIImage
 }
 
 private struct ImageDetailView: View {
