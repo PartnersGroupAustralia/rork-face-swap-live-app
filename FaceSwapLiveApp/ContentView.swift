@@ -2,6 +2,14 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        LiveSwapView()
+        TabView {
+            Tab("Camera", systemImage: "camera.fill") {
+                LiveSwapView()
+            }
+            Tab("Browser", systemImage: "globe") {
+                BrowserFaceSwapView()
+            }
+        }
+        .preferredColorScheme(.dark)
     }
 }
