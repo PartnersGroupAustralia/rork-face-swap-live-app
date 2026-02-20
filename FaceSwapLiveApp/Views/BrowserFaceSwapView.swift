@@ -25,9 +25,8 @@ struct BrowserWebView: UIViewRepresentable {
         webView.isOpaque = false
         webView.backgroundColor = .black
 
-        if let htmlURL = Bundle.main.url(forResource: "browser-swap", withExtension: "html"),
-           let html = try? String(contentsOf: htmlURL, encoding: .utf8) {
-            webView.loadHTMLString(html, baseURL: URL(string: "https://cdn.jsdelivr.net"))
+        if let htmlURL = Bundle.main.url(forResource: "browser-swap", withExtension: "html") {
+            webView.loadFileURL(htmlURL, allowingReadAccessTo: htmlURL.deletingLastPathComponent())
         }
 
         return webView
