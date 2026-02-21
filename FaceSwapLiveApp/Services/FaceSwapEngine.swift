@@ -67,14 +67,14 @@ nonisolated final class FaceSwapEngine: @unchecked Sendable {
         gradient.color0 = CIColor.white
         gradient.color1 = CIColor(red: 0, green: 0, blue: 0, alpha: 0)
 
-        guard let maskImage = gradient.outputImage?.cropped(to: extent) else { return nil }
+        guard let maskOutput = gradient.outputImage?.cropped(to: extent) else { return nil }
 
         let clearBG = CIImage(color: CIColor(red: 0, green: 0, blue: 0, alpha: 0)).cropped(to: extent)
 
-        guard let blendFilter = CIFilter(name: "CIBlendWithMask") else { return nil }
-        blendFilter.setValue(cropped, forKey: kCIInputImageKey)
-        blendFilter.setValue(clearBG, forKey: kCIInputBackgroundImageKey)
-        blendFilter.setValue(maskImage, forKey: kCIInputMaskImageKey)
+        let blendFilter = CIFilter.blendWithMask()
+        blendFilter.inputImage = cropped
+        blendFilter.backgroundImage = clearBG
+        blendFilter.maskImage = maskOutput
 
         guard let output = blendFilter.outputImage,
               let resultCG = ciContext.createCGImage(output, from: output.extent) else { return nil }
@@ -203,9 +203,9 @@ nonisolated final class FaceSwapEngine: @unchecked Sendable {
             .transformed(by: CGAffineTransform(scaleX: sx, y: sy))
             .transformed(by: CGAffineTransform(translationX: destRect.origin.x, y: destRect.origin.y))
 
-        guard let compositeFilter = CIFilter(name: "CISourceOverCompositing") else { return nil }
-        compositeFilter.setValue(positioned, forKey: kCIInputImageKey)
-        compositeFilter.setValue(output, forKey: kCIInputBackgroundImageKey)
+        let compositeFilter = CIFilter.sourceOverCompositing()
+        compositeFilter.inputImage = positioned
+        compositeFilter.backgroundImage = output
 
         if let composited = compositeFilter.outputImage {
             output = composited

@@ -1,7 +1,5 @@
 import SwiftUI
 import WebKit
-import PhotosUI
-import AVFoundation
 
 @Observable
 @MainActor
@@ -23,6 +21,8 @@ final class BrowserViewModel {
     var overlayMediaType: OverlayMediaType?
     var isOverlayActive: Bool = false
     var overlayOpacity: Double = 1.0
+
+    weak var webView: WKWebView?
 
     nonisolated enum OverlayMediaType: Sendable {
         case image
@@ -53,6 +53,24 @@ final class BrowserViewModel {
 
         guard let validURL = url else { return }
         currentURL = validURL
+    }
+
+    func goBack() {
+        webView?.goBack()
+    }
+
+    func goForward() {
+        webView?.goForward()
+    }
+
+    func reload() {
+        webView?.reload()
+    }
+
+    func goHome() {
+        currentURL = nil
+        urlText = ""
+        webView = nil
     }
 
     func addBookmark() {

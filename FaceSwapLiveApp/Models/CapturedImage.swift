@@ -1,6 +1,6 @@
 import UIKit
 
-struct CapturedImage: Identifiable {
-    let id = UUID()
+nonisolated struct CapturedImage: Identifiable {
+    let id: UUID = UUID()
     let image: UIImage
 }
