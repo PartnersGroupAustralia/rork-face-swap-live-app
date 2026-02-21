@@ -12,6 +12,8 @@ final class BrowserViewModel {
     var canGoForward: Bool = false
     var estimatedProgress: Double = 0
 
+    var pendingNavigationURL: URL?
+
     var bookmarks: [Bookmark] = []
     var showBookmarks: Bool = false
     var showOverlayPanel: Bool = false
@@ -73,6 +75,7 @@ final class BrowserViewModel {
         }
 
         guard let validURL = url else { return }
+        pendingNavigationURL = validURL
         currentURL = validURL
     }
 
@@ -175,10 +178,22 @@ final class BrowserViewModel {
         webView.evaluateJavaScript(js, completionHandler: nil)
     }
 
+    private func resizeForWebInjection(_ image: UIImage) -> UIImage {
+        let maxDim: CGFloat = 1280
+        let size = image.size
+        guard size.width > maxDim || size.height > maxDim else { return image }
+        let scale = min(maxDim / size.width, maxDim / size.height)
+        let newSize = CGSize(width: size.width * scale, height: size.height * scale)
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+        return renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+        }
+    }
+
     private func buildStateJS() -> String {
         let replaceAll = virtualCamMode == .replaceAll
 
-        if let image = sourceImage, let data = image.jpegData(compressionQuality: 0.8) {
+        if let image = sourceImage, let data = resizeForWebInjection(image).jpegData(compressionQuality: 0.7) {
             let b64 = data.base64EncodedString()
             return """
             (function(){

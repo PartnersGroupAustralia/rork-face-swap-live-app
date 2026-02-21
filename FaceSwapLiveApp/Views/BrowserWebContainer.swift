@@ -64,17 +64,13 @@ struct BrowserWebContainer: UIViewRepresentable {
             }
         }
 
-        if let url = viewModel.currentURL {
-            webView.load(URLRequest(url: url))
-        }
-
         return webView
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
-        guard let targetURL = viewModel.currentURL else { return }
-        if webView.url != targetURL {
-            webView.load(URLRequest(url: targetURL))
+        if let url = viewModel.pendingNavigationURL {
+            viewModel.pendingNavigationURL = nil
+            webView.load(URLRequest(url: url))
         }
     }
 
