@@ -13,6 +13,15 @@ struct BrowserWebContainer: UIViewRepresentable {
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
 
+        config.setURLSchemeHandler(viewModel.schemeHandler, forURLScheme: "fslvideo")
+
+        let vcamScript = WKUserScript(
+            source: VirtualCamJSProvider.patchScript,
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: false
+        )
+        config.userContentController.addUserScript(vcamScript)
+
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.uiDelegate = context.coordinator
         webView.navigationDelegate = context.coordinator
@@ -111,6 +120,12 @@ struct BrowserWebContainer: UIViewRepresentable {
                 webView.load(navigationAction.request)
             }
             return nil
+        }
+
+        nonisolated func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            Task { @MainActor in
+                viewModel.syncVirtualCamToPage()
+            }
         }
     }
 }

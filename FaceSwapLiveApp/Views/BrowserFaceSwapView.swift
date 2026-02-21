@@ -23,9 +23,9 @@ struct BrowserFaceSwapView: View {
     private var navigationBar: some View {
         HStack(spacing: 8) {
             HStack(spacing: 0) {
-                Image(systemName: viewModel.isLoading ? "arrow.clockwise" : "magnifyingglass")
+                Image(systemName: viewModel.isLoading ? "arrow.clockwise" : (viewModel.isVirtualCamActive ? "video.fill" : "magnifyingglass"))
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(viewModel.isVirtualCamActive ? Color.green : .secondary)
                     .frame(width: 28)
 
                 TextField("Search or enter URL", text: $viewModel.urlText)
@@ -109,11 +109,15 @@ struct BrowserFaceSwapView: View {
                     Text("FaceSwapLive Browser")
                         .font(.title2.weight(.semibold))
 
-                    Text("Browse any site with virtual cam overlay")
+                    Text("Browse any site with virtual cam injection")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
                 .padding(.top, 60)
+
+                if viewModel.isVirtualCamActive {
+                    virtualCamBanner
+                }
 
                 if !viewModel.bookmarks.isEmpty {
                     bookmarksGrid
@@ -124,6 +128,23 @@ struct BrowserFaceSwapView: View {
             .padding(.horizontal)
         }
         .scrollDismissesKeyboard(.interactively)
+    }
+
+    private var virtualCamBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "checkmark.seal.fill")
+                .foregroundStyle(.green)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Virtual Camera Active")
+                    .font(.subheadline.weight(.semibold))
+                Text(viewModel.virtualCamMode == .replaceAll ? "Replacing all camera feeds" : "Available as selectable device")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(12)
+        .background(Color.green.opacity(0.1), in: .rect(cornerRadius: 10))
     }
 
     private var bookmarksGrid: some View {
@@ -170,20 +191,22 @@ struct BrowserFaceSwapView: View {
                 .foregroundStyle(.secondary)
 
             VStack(spacing: 0) {
-                quickLinkRow(icon: "video.fill", title: "Google Meet", subtitle: "meet.google.com", url: "https://meet.google.com")
+                quickLinkRow(icon: "camera.viewfinder", title: "Webcam Test", subtitle: "webcamtests.com", url: "https://webcamtests.com/check", tint: .green)
                 Divider().padding(.leading, 52)
-                quickLinkRow(icon: "bubble.left.and.bubble.right.fill", title: "Discord", subtitle: "discord.com", url: "https://discord.com")
+                quickLinkRow(icon: "video.fill", title: "Google Meet", subtitle: "meet.google.com", url: "https://meet.google.com", tint: .blue)
                 Divider().padding(.leading, 52)
-                quickLinkRow(icon: "play.rectangle.fill", title: "YouTube", subtitle: "youtube.com", url: "https://youtube.com")
+                quickLinkRow(icon: "bubble.left.and.bubble.right.fill", title: "Discord", subtitle: "discord.com", url: "https://discord.com", tint: .indigo)
                 Divider().padding(.leading, 52)
-                quickLinkRow(icon: "gamecontroller.fill", title: "Twitch", subtitle: "twitch.tv", url: "https://twitch.tv")
+                quickLinkRow(icon: "play.rectangle.fill", title: "YouTube", subtitle: "youtube.com", url: "https://youtube.com", tint: .red)
+                Divider().padding(.leading, 52)
+                quickLinkRow(icon: "gamecontroller.fill", title: "Twitch", subtitle: "twitch.tv", url: "https://twitch.tv", tint: .purple)
             }
             .background(Color(.secondarySystemGroupedBackground))
             .clipShape(.rect(cornerRadius: 12))
         }
     }
 
-    private func quickLinkRow(icon: String, title: String, subtitle: String, url: String) -> some View {
+    private func quickLinkRow(icon: String, title: String, subtitle: String, url: String, tint: Color = .accentColor) -> some View {
         Button {
             viewModel.urlText = url
             viewModel.navigateTo(url)
@@ -193,7 +216,7 @@ struct BrowserFaceSwapView: View {
                     .font(.system(size: 16))
                     .foregroundStyle(.white)
                     .frame(width: 32, height: 32)
-                    .background(Color.accentColor, in: .rect(cornerRadius: 8))
+                    .background(tint, in: .rect(cornerRadius: 8))
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
@@ -217,7 +240,7 @@ struct BrowserFaceSwapView: View {
 
     private var overlayLayer: some View {
         Group {
-            if let image = viewModel.overlayImage, viewModel.overlayMediaType == .image {
+            if let image = viewModel.sourceImage, viewModel.sourceType == .image {
                 Color.clear
                     .overlay {
                         Image(uiImage: image)
@@ -227,7 +250,7 @@ struct BrowserFaceSwapView: View {
                     }
                     .clipped()
                     .opacity(viewModel.overlayOpacity)
-            } else if let videoURL = viewModel.overlayVideoURL, viewModel.overlayMediaType == .video {
+            } else if let videoURL = viewModel.sourceVideoURL, viewModel.sourceType == .video {
                 LoopingVideoPlayer(url: videoURL)
                     .opacity(viewModel.overlayOpacity)
             }
@@ -260,10 +283,19 @@ struct BrowserFaceSwapView: View {
             Spacer()
 
             Button { viewModel.showOverlayPanel = true } label: {
-                Image(systemName: viewModel.isOverlayActive ? "person.crop.rectangle.fill" : "person.crop.rectangle")
-                    .font(.system(size: 18))
-                    .foregroundStyle(viewModel.isOverlayActive ? Color.accentColor : .primary)
-                    .frame(width: 44, height: 44)
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: viewModel.isVirtualCamActive ? "web.camera.fill" : "web.camera")
+                        .font(.system(size: 18))
+                        .foregroundStyle(viewModel.isVirtualCamActive ? Color.green : .primary)
+                        .frame(width: 44, height: 44)
+
+                    if viewModel.isVirtualCamActive {
+                        Circle()
+                            .fill(.green)
+                            .frame(width: 8, height: 8)
+                            .offset(x: -6, y: 8)
+                    }
+                }
             }
 
             Spacer()

@@ -16,17 +16,38 @@ final class BrowserViewModel {
     var showBookmarks: Bool = false
     var showOverlayPanel: Bool = false
 
-    var overlayImage: UIImage?
-    var overlayVideoURL: URL?
-    var overlayMediaType: OverlayMediaType?
+    var sourceImage: UIImage?
+    var sourceVideoURL: URL?
+    var sourceType: SourceMediaType?
+
+    var isVirtualCamActive: Bool = false
+    var virtualCamMode: VirtualCamMode = .replaceAll
+
     var isOverlayActive: Bool = false
     var overlayOpacity: Double = 1.0
 
     weak var webView: WKWebView?
+    let schemeHandler = VirtualCamSchemeHandler()
 
-    nonisolated enum OverlayMediaType: Sendable {
+    var hasSource: Bool { sourceType != nil }
+
+    nonisolated enum SourceMediaType: Sendable {
         case image
         case video
+    }
+
+    nonisolated enum VirtualCamMode: Sendable, CaseIterable, Identifiable {
+        case replaceAll
+        case addDevice
+
+        nonisolated var id: Self { self }
+
+        nonisolated var label: String {
+            switch self {
+            case .replaceAll: "Replace All Cameras"
+            case .addDevice: "Add as Selectable Device"
+            }
+        }
     }
 
     private let bookmarksKey = "browser_bookmarks_v1"
@@ -55,17 +76,9 @@ final class BrowserViewModel {
         currentURL = validURL
     }
 
-    func goBack() {
-        webView?.goBack()
-    }
-
-    func goForward() {
-        webView?.goForward()
-    }
-
-    func reload() {
-        webView?.reload()
-    }
+    func goBack() { webView?.goBack() }
+    func goForward() { webView?.goForward() }
+    func reload() { webView?.reload() }
 
     func goHome() {
         currentURL = nil
@@ -92,25 +105,105 @@ final class BrowserViewModel {
         return bookmarks.contains { $0.urlString == url.absoluteString }
     }
 
-    func loadOverlayImage(_ image: UIImage) {
-        overlayImage = image
-        overlayVideoURL = nil
-        overlayMediaType = .image
-        isOverlayActive = true
+    func loadSource(image: UIImage) {
+        sourceImage = image
+        sourceVideoURL = nil
+        sourceType = .image
+        schemeHandler.videoFileURL = nil
+        if isVirtualCamActive { syncVirtualCamToPage() }
+        if isOverlayActive { }
     }
 
-    func loadOverlayVideo(_ url: URL) {
-        overlayVideoURL = url
-        overlayImage = nil
-        overlayMediaType = .video
-        isOverlayActive = true
+    func loadSource(videoURL: URL) {
+        sourceVideoURL = videoURL
+        sourceImage = nil
+        sourceType = .video
+        schemeHandler.videoFileURL = videoURL
+        if isVirtualCamActive { syncVirtualCamToPage() }
     }
 
-    func clearOverlay() {
-        overlayImage = nil
-        overlayVideoURL = nil
-        overlayMediaType = nil
+    func clearSource() {
+        sourceImage = nil
+        sourceVideoURL = nil
+        sourceType = nil
+        isVirtualCamActive = false
         isOverlayActive = false
+        schemeHandler.videoFileURL = nil
+        syncVirtualCamToPage()
+    }
+
+    func setVirtualCam(active: Bool) {
+        guard hasSource || !active else { return }
+        isVirtualCamActive = active
+        updateUserScripts()
+        syncVirtualCamToPage()
+    }
+
+    func updateUserScripts() {
+        guard let webView else { return }
+        let controller = webView.configuration.userContentController
+        controller.removeAllUserScripts()
+
+        controller.addUserScript(WKUserScript(
+            source: VirtualCamJSProvider.patchScript,
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: false
+        ))
+
+        if isVirtualCamActive, hasSource {
+            let stateJS = buildStateJS()
+            controller.addUserScript(WKUserScript(
+                source: stateJS,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: false
+            ))
+        }
+    }
+
+    func syncVirtualCamToPage() {
+        guard let webView else { return }
+
+        if !isVirtualCamActive || !hasSource {
+            webView.evaluateJavaScript(
+                "if(window.__fslVCam){window.__fslVCam.active=false;}try{navigator.mediaDevices.dispatchEvent(new Event('devicechange'));}catch(e){}",
+                completionHandler: nil
+            )
+            return
+        }
+
+        let js = buildStateJS()
+        webView.evaluateJavaScript(js, completionHandler: nil)
+    }
+
+    private func buildStateJS() -> String {
+        let replaceAll = virtualCamMode == .replaceAll
+
+        if let image = sourceImage, let data = image.jpegData(compressionQuality: 0.8) {
+            let b64 = data.base64EncodedString()
+            return """
+            (function(){
+            if(!window.__fslVCam)return;
+            window.__fslVCam.active=true;
+            window.__fslVCam.replaceAll=\(replaceAll);
+            window.__fslVCam.imageSrc='data:image/jpeg;base64,\(b64)';
+            window.__fslVCam.videoSrc=null;
+            try{navigator.mediaDevices.dispatchEvent(new Event('devicechange'));}catch(e){}
+            })();
+            """
+        } else if sourceVideoURL != nil {
+            return """
+            (function(){
+            if(!window.__fslVCam)return;
+            window.__fslVCam.active=true;
+            window.__fslVCam.replaceAll=\(replaceAll);
+            window.__fslVCam.videoSrc='fslvideo://media';
+            window.__fslVCam.imageSrc=null;
+            try{navigator.mediaDevices.dispatchEvent(new Event('devicechange'));}catch(e){}
+            })();
+            """
+        }
+
+        return "if(window.__fslVCam){window.__fslVCam.active=false;}"
     }
 
     private func loadBookmarks() {
