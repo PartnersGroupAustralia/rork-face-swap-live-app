@@ -104,60 +104,88 @@ nonisolated struct FingerprintConfig: Codable, Sendable, Hashable {
 
     static let deviceProfiles: [DeviceProfile] = [
         DeviceProfile(
-            label: "iPhone 15 Pro",
-            userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Mobile/15E148 Safari/604.1",
-            platform: "iPhone", screenWidth: 393, screenHeight: 852,
-            availWidth: 393, availHeight: 852, pixelRatio: 3.0,
+            label: "iPhone 17 Pro Max",
+            userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 26_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
+            platform: "iPhone", screenWidth: 440, screenHeight: 956,
+            availWidth: 440, availHeight: 956, pixelRatio: 3.0,
+            hardwareConcurrency: 6, deviceMemory: 12, maxTouchPoints: 5
+        ),
+        DeviceProfile(
+            label: "iPhone 17 Pro",
+            userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 26_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
+            platform: "iPhone", screenWidth: 402, screenHeight: 874,
+            availWidth: 402, availHeight: 874, pixelRatio: 3.0,
+            hardwareConcurrency: 6, deviceMemory: 12, maxTouchPoints: 5
+        ),
+        DeviceProfile(
+            label: "iPhone 17 Air",
+            userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 26_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
+            platform: "iPhone", screenWidth: 420, screenHeight: 912,
+            availWidth: 420, availHeight: 912, pixelRatio: 3.0,
+            hardwareConcurrency: 6, deviceMemory: 8, maxTouchPoints: 5
+        ),
+        DeviceProfile(
+            label: "iPhone 17",
+            userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 26_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
+            platform: "iPhone", screenWidth: 402, screenHeight: 874,
+            availWidth: 402, availHeight: 874, pixelRatio: 3.0,
             hardwareConcurrency: 6, deviceMemory: 8, maxTouchPoints: 5
         ),
         DeviceProfile(
             label: "iPhone 16 Pro Max",
-            userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Mobile/15E148 Safari/604.1",
-            platform: "iPhone", screenWidth: 440, screenHeight: 956,
-            availWidth: 440, availHeight: 956, pixelRatio: 3.0,
+            userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 26_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
+            platform: "iPhone", screenWidth: 430, screenHeight: 932,
+            availWidth: 430, availHeight: 932, pixelRatio: 3.0,
             hardwareConcurrency: 6, deviceMemory: 8, maxTouchPoints: 5
         ),
         DeviceProfile(
-            label: "iPhone 14",
-            userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_2_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Mobile/15E148 Safari/604.1",
-            platform: "iPhone", screenWidth: 390, screenHeight: 844,
-            availWidth: 390, availHeight: 844, pixelRatio: 3.0,
-            hardwareConcurrency: 6, deviceMemory: 6, maxTouchPoints: 5
-        ),
-        DeviceProfile(
-            label: "iPad Pro 12.9",
-            userAgent: "Mozilla/5.0 (iPad; CPU OS 18_3_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Mobile/15E148 Safari/604.1",
-            platform: "iPad", screenWidth: 1024, screenHeight: 1366,
-            availWidth: 1024, availHeight: 1366, pixelRatio: 2.0,
-            hardwareConcurrency: 8, deviceMemory: 16, maxTouchPoints: 5
-        ),
-        DeviceProfile(
-            label: "MacBook Pro (Safari)",
-            userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Safari/605.1.15",
-            platform: "MacIntel", screenWidth: 1512, screenHeight: 982,
-            availWidth: 1512, availHeight: 929, pixelRatio: 2.0,
-            hardwareConcurrency: 12, deviceMemory: 16, maxTouchPoints: 0
-        ),
-        DeviceProfile(
-            label: "Windows Chrome",
-            userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-            platform: "Win32", screenWidth: 1920, screenHeight: 1080,
-            availWidth: 1920, availHeight: 1040, pixelRatio: 1.0,
-            hardwareConcurrency: 16, deviceMemory: 8, maxTouchPoints: 0
-        ),
-        DeviceProfile(
-            label: "Pixel 8 Pro",
-            userAgent: "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.135 Mobile Safari/537.36",
-            platform: "Linux armv81", screenWidth: 412, screenHeight: 892,
-            availWidth: 412, availHeight: 892, pixelRatio: 2.625,
+            label: "Samsung Galaxy S26 Ultra",
+            userAgent: "Mozilla/5.0 (Linux; Android 16; SM-S938B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7049.100 Mobile Safari/537.36",
+            platform: "Linux armv81", screenWidth: 384, screenHeight: 824,
+            availWidth: 384, availHeight: 824, pixelRatio: 3.75,
             hardwareConcurrency: 8, deviceMemory: 12, maxTouchPoints: 5
         ),
         DeviceProfile(
-            label: "Samsung Galaxy S24",
-            userAgent: "Mozilla/5.0 (Linux; Android 14; SM-S921B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.135 Mobile Safari/537.36",
-            platform: "Linux armv81", screenWidth: 360, screenHeight: 780,
-            availWidth: 360, availHeight: 780, pixelRatio: 3.0,
-            hardwareConcurrency: 8, deviceMemory: 8, maxTouchPoints: 5
+            label: "Samsung Galaxy S25 Ultra",
+            userAgent: "Mozilla/5.0 (Linux; Android 16; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7049.100 Mobile Safari/537.36",
+            platform: "Linux armv81", screenWidth: 412, screenHeight: 891,
+            availWidth: 412, availHeight: 891, pixelRatio: 3.5,
+            hardwareConcurrency: 8, deviceMemory: 12, maxTouchPoints: 5
+        ),
+        DeviceProfile(
+            label: "Google Pixel 10 Pro XL",
+            userAgent: "Mozilla/5.0 (Linux; Android 16; Pixel 10 Pro XL) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7049.100 Mobile Safari/537.36",
+            platform: "Linux armv81", screenWidth: 414, screenHeight: 921,
+            availWidth: 414, availHeight: 921, pixelRatio: 3.25,
+            hardwareConcurrency: 8, deviceMemory: 16, maxTouchPoints: 5
+        ),
+        DeviceProfile(
+            label: "Google Pixel 10 Pro",
+            userAgent: "Mozilla/5.0 (Linux; Android 16; Pixel 10 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7049.100 Mobile Safari/537.36",
+            platform: "Linux armv81", screenWidth: 410, screenHeight: 914,
+            availWidth: 410, availHeight: 914, pixelRatio: 3.125,
+            hardwareConcurrency: 8, deviceMemory: 16, maxTouchPoints: 5
+        ),
+        DeviceProfile(
+            label: "iPad Pro 13\" M4",
+            userAgent: "Mozilla/5.0 (iPad; CPU OS 26_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
+            platform: "iPad", screenWidth: 1032, screenHeight: 1376,
+            availWidth: 1032, availHeight: 1376, pixelRatio: 2.0,
+            hardwareConcurrency: 10, deviceMemory: 16, maxTouchPoints: 5
+        ),
+        DeviceProfile(
+            label: "MacBook Pro 16\" (Safari)",
+            userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15",
+            platform: "MacIntel", screenWidth: 1728, screenHeight: 1117,
+            availWidth: 1728, availHeight: 1055, pixelRatio: 2.0,
+            hardwareConcurrency: 12, deviceMemory: 36, maxTouchPoints: 0
+        ),
+        DeviceProfile(
+            label: "Windows 11 Chrome",
+            userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7049.100 Safari/537.36",
+            platform: "Win32", screenWidth: 1920, screenHeight: 1080,
+            availWidth: 1920, availHeight: 1032, pixelRatio: 1.0,
+            hardwareConcurrency: 16, deviceMemory: 8, maxTouchPoints: 0
         )
     ]
 
@@ -232,11 +260,19 @@ nonisolated struct FingerprintConfig: Codable, Sendable, Hashable {
         if device.platform == "Win32" {
             vendor = "Google Inc."
             glVendor = "Google Inc. (NVIDIA)"
-            glRenderer = "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Direct3D11 vs_5_0 ps_5_0, D3D11)"
+            glRenderer = "ANGLE (NVIDIA, NVIDIA GeForce RTX 5070 Direct3D11 vs_5_0 ps_5_0, D3D11)"
         } else if device.platform.contains("Linux") {
             vendor = "Google Inc."
-            glVendor = "Qualcomm"
-            glRenderer = "Adreno (TM) 750"
+            if device.label.contains("Pixel") {
+                glVendor = "Google Inc."
+                glRenderer = "Mali-G715"
+            } else if device.label.contains("S26") {
+                glVendor = "Qualcomm"
+                glRenderer = "Adreno (TM) 840"
+            } else {
+                glVendor = "Qualcomm"
+                glRenderer = "Adreno (TM) 750"
+            }
         } else {
             vendor = "Apple Computer, Inc."
             glVendor = "Apple Inc."
