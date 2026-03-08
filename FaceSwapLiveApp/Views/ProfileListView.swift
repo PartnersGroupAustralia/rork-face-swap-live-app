@@ -195,14 +195,9 @@ struct ProfileCard: View {
     private var fingerprintSummary: String {
         let fp = profile.fingerprint
         if fp.mode == .defaultSafari {
-            return "Native Safari · No Spoofing"
+            return "Default Safari · Isolated"
         }
-        let device: String
-        if fp.platform.contains("iPhone") { device = "iPhone" }
-        else if fp.platform.contains("iPad") { device = "iPad" }
-        else if fp.platform == "MacIntel" { device = "Mac" }
-        else if fp.platform == "Win32" { device = "Windows" }
-        else { device = "Android" }
-        return "\(device) · \(fp.timezone.split(separator: "/").last ?? Substring(fp.timezone))"
+        let label = fp.deviceLabel.isEmpty ? fp.platform : fp.deviceLabel
+        return "Stealth · \(label)"
     }
 }
