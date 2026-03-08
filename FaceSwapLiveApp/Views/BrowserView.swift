@@ -19,7 +19,7 @@ struct BrowserView: View {
             BookmarksSheet(profile: profile, profileManager: profileManager, viewModel: viewModel)
         }
         .onAppear {
-            if let home = URL(string: profile.homeURL), !profile.homeURL.isEmpty {
+            if !profile.homeURL.isEmpty, URL(string: profile.homeURL) != nil {
                 viewModel.urlText = profile.homeURL
                 viewModel.navigateTo(profile.homeURL)
             }

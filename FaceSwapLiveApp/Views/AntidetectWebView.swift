@@ -25,8 +25,9 @@ struct AntidetectWebView: UIViewRepresentable {
         )
         config.userContentController.addUserScript(spoofScript)
 
+        let escapedUA = profile.fingerprint.userAgent.replacingOccurrences(of: "'", with: "\\'")
         let uaScript = WKUserScript(
-            source: "Object.defineProperty(navigator,'userAgent',{get:function(){return '\(profile.fingerprint.userAgent.replacingOccurrences(of: "'", with: "\\'"))';},configurable:true});",
+            source: "Object.defineProperty(navigator,'userAgent',{get:function(){return '\(escapedUA)';},configurable:true});",
             injectionTime: .atDocumentEnd,
             forMainFrameOnly: false
         )

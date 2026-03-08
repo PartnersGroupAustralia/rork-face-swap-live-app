@@ -1,28 +1,28 @@
 import Foundation
 
-nonisolated struct FingerprintConfig: Codable, Sendable, Hashable {
-    var userAgent: String
-    var platform: String
-    var vendor: String
-    var languages: [String]
-    var hardwareConcurrency: Int
-    var deviceMemory: Int
-    var maxTouchPoints: Int
-    var screenWidth: Int
-    var screenHeight: Int
-    var availWidth: Int
-    var availHeight: Int
-    var colorDepth: Int
-    var pixelRatio: Double
-    var timezone: String
-    var timezoneOffset: Int
-    var webGLVendor: String
-    var webGLRenderer: String
-    var canvasSeed: Int
-    var audioSeed: Int
-    var doNotTrack: String
-    var blockWebRTC: Bool
-    var spoofFonts: Bool
+struct FingerprintConfig: Codable, Sendable, Hashable {
+    nonisolated var userAgent: String
+    nonisolated var platform: String
+    nonisolated var vendor: String
+    nonisolated var languages: [String]
+    nonisolated var hardwareConcurrency: Int
+    nonisolated var deviceMemory: Int
+    nonisolated var maxTouchPoints: Int
+    nonisolated var screenWidth: Int
+    nonisolated var screenHeight: Int
+    nonisolated var availWidth: Int
+    nonisolated var availHeight: Int
+    nonisolated var colorDepth: Int
+    nonisolated var pixelRatio: Double
+    nonisolated var timezone: String
+    nonisolated var timezoneOffset: Int
+    nonisolated var webGLVendor: String
+    nonisolated var webGLRenderer: String
+    nonisolated var canvasSeed: Int
+    nonisolated var audioSeed: Int
+    nonisolated var doNotTrack: String
+    nonisolated var blockWebRTC: Bool
+    nonisolated var spoofFonts: Bool
 
     static let deviceProfiles: [DeviceProfile] = [
         DeviceProfile(
@@ -94,7 +94,6 @@ nonisolated struct FingerprintConfig: Codable, Sendable, Hashable {
         ("Tokyo (JST)", "Asia/Tokyo", -540),
         ("Sydney (AEST)", "Australia/Sydney", -660),
         ("Dubai (GST)", "Asia/Dubai", -240),
-        ("São Paulo (BRT)", "America/Sao_Paulo", 180),
     ]
 
     static let languageSets: [(label: String, langs: [String])] = [
@@ -188,19 +187,4 @@ nonisolated struct FingerprintConfig: Codable, Sendable, Hashable {
             spoofFonts: true
         )
     }
-}
-
-nonisolated struct DeviceProfile: Codable, Sendable, Hashable, Identifiable {
-    var id: String { label }
-    let label: String
-    let userAgent: String
-    let platform: String
-    let screenWidth: Int
-    let screenHeight: Int
-    let availWidth: Int
-    let availHeight: Int
-    let pixelRatio: Double
-    let hardwareConcurrency: Int
-    let deviceMemory: Int
-    let maxTouchPoints: Int
 }

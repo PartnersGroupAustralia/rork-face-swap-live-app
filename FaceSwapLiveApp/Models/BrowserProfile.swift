@@ -1,17 +1,17 @@
 import Foundation
 
-nonisolated struct BrowserProfile: Codable, Identifiable, Sendable, Hashable {
-    var id: UUID
-    var name: String
-    var colorHex: String
-    var emoji: String
-    var createdAt: Date
-    var lastUsed: Date?
-    var fingerprint: FingerprintConfig
-    var bookmarks: [Bookmark]
-    var homeURL: String
+struct BrowserProfile: Codable, Identifiable, Sendable, Hashable {
+    nonisolated var id: UUID
+    nonisolated var name: String
+    nonisolated var colorHex: String
+    nonisolated var emoji: String
+    nonisolated var createdAt: Date
+    nonisolated var lastUsed: Date?
+    nonisolated var fingerprint: FingerprintConfig
+    nonisolated var bookmarks: [Bookmark]
+    nonisolated var homeURL: String
 
-    init(
+    nonisolated init(
         id: UUID = UUID(),
         name: String = "Profile",
         colorHex: String = "007AFF",

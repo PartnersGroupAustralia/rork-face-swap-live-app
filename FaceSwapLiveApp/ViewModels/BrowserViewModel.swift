@@ -2,7 +2,6 @@ import SwiftUI
 import WebKit
 
 @Observable
-@MainActor
 final class BrowserViewModel {
     var urlText: String = ""
     var currentURL: URL?

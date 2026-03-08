@@ -2,7 +2,6 @@ import Foundation
 import WebKit
 
 @Observable
-@MainActor
 final class ProfileManager {
     var profiles: [BrowserProfile] = []
 
@@ -31,10 +30,11 @@ final class ProfileManager {
     }
 
     func deleteProfile(_ profile: BrowserProfile) {
-        profiles.removeAll { $0.id == profile.id }
+        let profileID = profile.id
+        profiles.removeAll { $0.id == profileID }
         saveProfiles()
         Task {
-            await clearDataStore(for: profile.id)
+            try? await WKWebsiteDataStore.remove(forIdentifier: profileID)
         }
     }
 
@@ -55,10 +55,6 @@ final class ProfileManager {
         guard let index = profiles.firstIndex(where: { $0.id == profileID }) else { return }
         profiles[index].bookmarks.removeAll { $0.id == bookmark.id }
         saveProfiles()
-    }
-
-    private func clearDataStore(for profileID: UUID) async {
-        try? await WKWebsiteDataStore.remove(forIdentifier: profileID)
     }
 
     private func loadProfiles() {
