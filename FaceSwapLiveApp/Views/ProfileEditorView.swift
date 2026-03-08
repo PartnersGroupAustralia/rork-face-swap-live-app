@@ -190,7 +190,7 @@ struct ProfileEditorView: View {
             if fingerprintMode == .defaultSafari {
                 VStack(alignment: .leading, spacing: 6) {
                     previewRow(label: "Mode", value: "Default Safari")
-                    previewRow(label: "JS Injection", value: "None")
+                    previewRow(label: "Normalization", value: "WKWebView → Safari")
                     previewRow(label: "Tampering", value: "Undetectable")
                     previewRow(label: "Cookies", value: "Isolated per profile")
                     previewRow(label: "Storage", value: "Isolated per profile")
@@ -205,7 +205,7 @@ struct ProfileEditorView: View {
                     previewRow(label: "Mode", value: "Stealth (Custom UA)")
                     previewRow(label: "UA", value: String(device.userAgent.prefix(55)) + "...")
                     previewRow(label: "Platform", value: device.platform)
-                    previewRow(label: "JS Injection", value: "None")
+                    previewRow(label: "Normalization", value: "WKWebView → Safari")
                     previewRow(label: "Tampering", value: "Undetectable")
                     if proxyEnabled && !proxyHost.isEmpty {
                         previewRow(label: "Proxy", value: "\(proxyType.displayName) \(proxyHost):\(proxyPort)")

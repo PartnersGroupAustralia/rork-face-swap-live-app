@@ -22,6 +22,13 @@ struct AntidetectWebView: UIViewRepresentable {
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
 
+        let normScript = WKUserScript(
+            source: FingerprintSpoofEngine.normalizationScript(),
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: false
+        )
+        config.userContentController.addUserScript(normScript)
+
         let webView = WKWebView(frame: .zero, configuration: config)
 
         let ua = FingerprintSpoofEngine.customUserAgent(for: profile.fingerprint)
