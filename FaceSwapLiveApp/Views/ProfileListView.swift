@@ -9,24 +9,11 @@ struct ProfileListView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                LazyVStack(spacing: 12) {
-                    ForEach(profileManager.profiles) { profile in
-                        ProfileCard(profile: profile) {
-                            profileManager.markUsed(profile)
-                            activeProfile = profile
-                        } onEdit: {
-                            profileToEdit = profile
-                        } onDelete: {
-                            profileToDelete = profile
-                        }
-                    }
-                }
-                .padding(.horizontal)
-                .padding(.top, 8)
-
+            Group {
                 if profileManager.profiles.isEmpty {
                     emptyState
+                } else {
+                    profileList
                 }
             }
             .background(Color(.systemGroupedBackground))
@@ -57,7 +44,9 @@ struct ProfileListView: View {
                 Button("Cancel", role: .cancel) { profileToDelete = nil }
                 Button("Delete", role: .destructive) {
                     if let p = profileToDelete {
-                        profileManager.deleteProfile(p)
+                        withAnimation {
+                            profileManager.deleteProfile(p)
+                        }
                         profileToDelete = nil
                     }
                 }
@@ -65,6 +54,41 @@ struct ProfileListView: View {
                 Text("This will permanently delete the profile and all its browsing data, cookies, and history.")
             }
         }
+    }
+
+    private var profileList: some View {
+        List {
+            ForEach(profileManager.profiles) { profile in
+                ProfileCard(profile: profile) {
+                    profileManager.markUsed(profile)
+                    activeProfile = profile
+                } onEdit: {
+                    profileToEdit = profile
+                } onDelete: {
+                    profileToDelete = profile
+                }
+                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        profileToDelete = profile
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
+                .swipeActions(edge: .trailing) {
+                    Button {
+                        profileToEdit = profile
+                    } label: {
+                        Label("Edit", systemImage: "pencil")
+                    }
+                    .tint(.orange)
+                }
+            }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
     }
 
     private var emptyState: some View {

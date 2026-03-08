@@ -22,8 +22,7 @@ struct AntidetectWebView: UIViewRepresentable {
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
 
-        switch profile.fingerprint.mode {
-        case .antidetect:
+        if profile.fingerprint.mode == .antidetect {
             let spoofJS = FingerprintSpoofEngine.spoofScript(for: profile.fingerprint)
             let spoofScript = WKUserScript(
                 source: spoofJS,
@@ -31,14 +30,6 @@ struct AntidetectWebView: UIViewRepresentable {
                 forMainFrameOnly: false
             )
             config.userContentController.addUserScript(spoofScript)
-        case .defaultSafari:
-            let normalizeJS = FingerprintSpoofEngine.safariNormalizationScript()
-            let normalizeScript = WKUserScript(
-                source: normalizeJS,
-                injectionTime: .atDocumentStart,
-                forMainFrameOnly: false
-            )
-            config.userContentController.addUserScript(normalizeScript)
         }
 
         let webView = WKWebView(frame: .zero, configuration: config)
