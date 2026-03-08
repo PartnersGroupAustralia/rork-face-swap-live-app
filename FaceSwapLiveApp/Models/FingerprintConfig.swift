@@ -1,5 +1,24 @@
 import Foundation
 
+nonisolated enum FingerprintMode: String, Codable, Sendable, Hashable, CaseIterable {
+    case defaultSafari = "default"
+    case antidetect = "antidetect"
+
+    var displayName: String {
+        switch self {
+        case .defaultSafari: return "Default (Native Safari)"
+        case .antidetect: return "Antidetect"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .defaultSafari: return "No fingerprint spoofing. Uses the device's real Safari fingerprint. Isolated cookies, storage, and proxy only."
+        case .antidetect: return "Spoofs browser fingerprint including screen, timezone, language, canvas, audio, and WebGL. May trigger tampering detection."
+        }
+    }
+}
+
 nonisolated struct ScreenFrame: Codable, Sendable, Hashable {
     var x: Int
     var y: Int
@@ -18,6 +37,7 @@ nonisolated struct ScreenFrame: Codable, Sendable, Hashable {
 }
 
 nonisolated struct FingerprintConfig: Codable, Sendable, Hashable {
+    var mode: FingerprintMode
     var userAgent: String
     var platform: String
     var vendor: String
@@ -44,6 +64,7 @@ nonisolated struct FingerprintConfig: Codable, Sendable, Hashable {
     var screenFrame: ScreenFrame
 
     init(
+        mode: FingerprintMode = .antidetect,
         userAgent: String = "",
         platform: String = "",
         vendor: String = "Apple Computer, Inc.",
@@ -69,6 +90,7 @@ nonisolated struct FingerprintConfig: Codable, Sendable, Hashable {
         autoDetectFromIP: Bool = false,
         screenFrame: ScreenFrame? = nil
     ) {
+        self.mode = mode
         self.userAgent = userAgent
         self.platform = platform
         self.vendor = vendor
@@ -103,6 +125,7 @@ nonisolated struct FingerprintConfig: Codable, Sendable, Hashable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        mode = try container.decodeIfPresent(FingerprintMode.self, forKey: .mode) ?? .antidetect
         userAgent = try container.decode(String.self, forKey: .userAgent)
         platform = try container.decode(String.self, forKey: .platform)
         vendor = try container.decode(String.self, forKey: .vendor)
@@ -130,6 +153,20 @@ nonisolated struct FingerprintConfig: Codable, Sendable, Hashable {
     }
 
     static let deviceProfiles: [DeviceProfile] = [
+        DeviceProfile(
+            label: "iPhone 17 Pro Max",
+            userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Mobile/15E148 Safari/604.1",
+            platform: "iPhone", screenWidth: 440, screenHeight: 956,
+            availWidth: 440, availHeight: 956, pixelRatio: 3.0,
+            hardwareConcurrency: 6, deviceMemory: 8, maxTouchPoints: 5
+        ),
+        DeviceProfile(
+            label: "iPhone 17 Pro",
+            userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Mobile/15E148 Safari/604.1",
+            platform: "iPhone", screenWidth: 402, screenHeight: 874,
+            availWidth: 402, availHeight: 874, pixelRatio: 3.0,
+            hardwareConcurrency: 6, deviceMemory: 8, maxTouchPoints: 5
+        ),
         DeviceProfile(
             label: "iPhone 16 Pro Max",
             userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_3_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Mobile/15E148 Safari/604.1",
@@ -239,6 +276,35 @@ nonisolated struct FingerprintConfig: Codable, Sendable, Hashable {
         ("Arabic", ["ar-SA", "ar", "en"]),
     ]
 
+    static func defaultSafari() -> FingerprintConfig {
+        FingerprintConfig(
+            mode: .defaultSafari,
+            userAgent: "",
+            platform: "iPhone",
+            vendor: "Apple Computer, Inc.",
+            languages: ["en-US", "en"],
+            hardwareConcurrency: 6,
+            deviceMemory: 8,
+            maxTouchPoints: 5,
+            screenWidth: 393,
+            screenHeight: 852,
+            availWidth: 393,
+            availHeight: 852,
+            colorDepth: 32,
+            pixelRatio: 3.0,
+            timezone: "",
+            timezoneOffset: 0,
+            webGLVendor: "Apple Inc.",
+            webGLRenderer: "Apple GPU",
+            canvasSeed: 0,
+            audioSeed: 0,
+            doNotTrack: "unspecified",
+            blockWebRTC: false,
+            spoofFonts: false,
+            autoDetectFromIP: false
+        )
+    }
+
     static func randomized() -> FingerprintConfig {
         let profile = deviceProfiles.randomElement()!
         let tz = timezones.filter { !$0.zone.isEmpty }.randomElement()!
@@ -263,6 +329,7 @@ nonisolated struct FingerprintConfig: Codable, Sendable, Hashable {
         }
 
         return FingerprintConfig(
+            mode: .antidetect,
             userAgent: profile.userAgent,
             platform: profile.platform,
             vendor: vendor,
@@ -317,6 +384,7 @@ nonisolated struct FingerprintConfig: Codable, Sendable, Hashable {
         }
 
         return FingerprintConfig(
+            mode: .antidetect,
             userAgent: device.userAgent,
             platform: device.platform,
             vendor: vendor,

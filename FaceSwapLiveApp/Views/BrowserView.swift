@@ -196,9 +196,9 @@ struct BrowserView: View {
                         .font(.title2.weight(.semibold))
 
                     HStack(spacing: 6) {
-                        Image(systemName: "checkmark.shield.fill")
-                            .foregroundStyle(.green)
-                        Text("Fingerprint Active")
+                        Image(systemName: profile.fingerprint.mode == .defaultSafari ? "safari" : "checkmark.shield.fill")
+                            .foregroundStyle(profile.fingerprint.mode == .defaultSafari ? .blue : .green)
+                        Text(profile.fingerprint.mode == .defaultSafari ? "Native Safari" : "Fingerprint Active")
                             .foregroundStyle(.secondary)
                     }
                     .font(.caption)
@@ -230,19 +230,27 @@ struct BrowserView: View {
 
     private var fingerprintSummaryCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label("Active Fingerprint", systemImage: "cpu")
+            Label(profile.fingerprint.mode == .defaultSafari ? "Native Safari" : "Active Fingerprint", systemImage: profile.fingerprint.mode == .defaultSafari ? "safari" : "cpu")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
 
             let fp = profile.fingerprint
             VStack(spacing: 0) {
-                infoRow(icon: "desktopcomputer", label: "Device", value: fp.platform)
-                Divider().padding(.leading, 36)
-                infoRow(icon: "globe", label: "Timezone", value: fp.timezone)
-                Divider().padding(.leading, 36)
-                infoRow(icon: "textformat", label: "Language", value: fp.languages.first ?? "en-US")
-                Divider().padding(.leading, 36)
-                infoRow(icon: "eye.slash", label: "WebRTC", value: fp.blockWebRTC ? "Blocked" : "Allowed")
+                if fp.mode == .defaultSafari {
+                    infoRow(icon: "checkmark.circle", label: "Mode", value: "No Spoofing")
+                    Divider().padding(.leading, 36)
+                    infoRow(icon: "cylinder.split.1x2", label: "Cookies", value: "Isolated")
+                    Divider().padding(.leading, 36)
+                    infoRow(icon: "externaldrive", label: "Storage", value: "Isolated")
+                } else {
+                    infoRow(icon: "desktopcomputer", label: "Device", value: fp.platform)
+                    Divider().padding(.leading, 36)
+                    infoRow(icon: "globe", label: "Timezone", value: fp.timezone)
+                    Divider().padding(.leading, 36)
+                    infoRow(icon: "textformat", label: "Language", value: fp.languages.first ?? "en-US")
+                    Divider().padding(.leading, 36)
+                    infoRow(icon: "eye.slash", label: "WebRTC", value: fp.blockWebRTC ? "Blocked" : "Allowed")
+                }
                 Divider().padding(.leading, 36)
                 infoRow(icon: "network", label: "Proxy", value: profile.proxy.isValid ? profile.proxy.summary : "None")
             }

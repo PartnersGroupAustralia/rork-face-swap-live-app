@@ -170,6 +170,9 @@ struct ProfileCard: View {
 
     private var fingerprintSummary: String {
         let fp = profile.fingerprint
+        if fp.mode == .defaultSafari {
+            return "Native Safari · No Spoofing"
+        }
         let device: String
         if fp.platform.contains("iPhone") { device = "iPhone" }
         else if fp.platform.contains("iPad") { device = "iPad" }

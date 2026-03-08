@@ -22,16 +22,20 @@ struct AntidetectWebView: UIViewRepresentable {
         config.allowsInlineMediaPlayback = true
         config.mediaTypesRequiringUserActionForPlayback = []
 
-        let spoofJS = FingerprintSpoofEngine.spoofScript(for: profile.fingerprint)
-        let spoofScript = WKUserScript(
-            source: spoofJS,
-            injectionTime: .atDocumentStart,
-            forMainFrameOnly: false
-        )
-        config.userContentController.addUserScript(spoofScript)
+        if profile.fingerprint.mode == .antidetect {
+            let spoofJS = FingerprintSpoofEngine.spoofScript(for: profile.fingerprint)
+            let spoofScript = WKUserScript(
+                source: spoofJS,
+                injectionTime: .atDocumentStart,
+                forMainFrameOnly: false
+            )
+            config.userContentController.addUserScript(spoofScript)
+        }
 
         let webView = WKWebView(frame: .zero, configuration: config)
-        webView.customUserAgent = profile.fingerprint.userAgent
+        if profile.fingerprint.mode == .antidetect && !profile.fingerprint.userAgent.isEmpty {
+            webView.customUserAgent = profile.fingerprint.userAgent
+        }
         webView.allowsBackForwardNavigationGestures = true
         webView.isOpaque = true
         webView.uiDelegate = context.coordinator

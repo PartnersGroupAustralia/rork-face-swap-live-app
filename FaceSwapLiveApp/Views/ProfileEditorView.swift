@@ -8,6 +8,7 @@ struct ProfileEditorView: View {
     @State private var name: String = ""
     @State private var emoji: String = "🌐"
     @State private var selectedColorHex: String = "007AFF"
+    @State private var fingerprintMode: FingerprintMode = .antidetect
     @State private var selectedDeviceIndex: Int = 0
     @State private var selectedTimezoneIndex: Int = 1
     @State private var selectedLanguageIndex: Int = 1
@@ -43,10 +44,15 @@ struct ProfileEditorView: View {
         NavigationStack {
             Form {
                 profileInfoSection
-                deviceSection
-                locationSection
+                fingerprintModeSection
+                if fingerprintMode == .antidetect {
+                    deviceSection
+                    locationSection
+                }
                 proxySection
-                privacySection
+                if fingerprintMode == .antidetect {
+                    privacySection
+                }
                 fingerprintPreviewSection
             }
             .navigationTitle(isEditing ? "Edit Profile" : "New Profile")
@@ -65,6 +71,23 @@ struct ProfileEditorView: View {
                 }
             }
             .onAppear(perform: loadExisting)
+        }
+    }
+
+    private var fingerprintModeSection: some View {
+        Section {
+            Picker("Mode", selection: $fingerprintMode) {
+                ForEach(FingerprintMode.allCases, id: \.self) { mode in
+                    Text(mode.displayName).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            Text(fingerprintMode.description)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } header: {
+            Text("Fingerprint Mode")
         }
     }
 
@@ -222,6 +245,18 @@ struct ProfileEditorView: View {
 
     private var fingerprintPreviewSection: some View {
         Section("Fingerprint Preview") {
+            if fingerprintMode == .defaultSafari {
+                VStack(alignment: .leading, spacing: 6) {
+                    previewRow(label: "Mode", value: "Native Safari")
+                    previewRow(label: "Spoofing", value: "None")
+                    previewRow(label: "Cookies", value: "Isolated per profile")
+                    previewRow(label: "Storage", value: "Isolated per profile")
+                    if proxyEnabled && !proxyHost.isEmpty {
+                        previewRow(label: "Proxy", value: "\(proxyType.displayName) \(proxyHost):\(proxyPort)")
+                    }
+                }
+                .font(.caption)
+            } else {
             let device = FingerprintConfig.deviceProfiles[selectedDeviceIndex]
             let tzIndex = selectedTimezoneIndex
             let langIndex = selectedLanguageIndex
@@ -246,6 +281,7 @@ struct ProfileEditorView: View {
                 }
             }
             .font(.caption)
+            }
         }
     }
 
@@ -300,6 +336,7 @@ struct ProfileEditorView: View {
         selectedColorHex = profile.colorHex
         homeURL = profile.homeURL
 
+        fingerprintMode = profile.fingerprint.mode
         if let idx = FingerprintConfig.deviceProfiles.firstIndex(where: { $0.userAgent == profile.fingerprint.userAgent }) {
             selectedDeviceIndex = idx
         }
@@ -326,20 +363,26 @@ struct ProfileEditorView: View {
     }
 
     private func saveProfile() {
-        let device = FingerprintConfig.deviceProfiles[selectedDeviceIndex]
-        let isAutoTZ = selectedTimezoneIndex == 0
-        let isAutoLang = selectedLanguageIndex == 0
+        var fp: FingerprintConfig
 
-        let tz = isAutoTZ ? FingerprintConfig.timezones[2] : FingerprintConfig.timezones[selectedTimezoneIndex]
-        let lang = isAutoLang ? FingerprintConfig.languageSets[1] : FingerprintConfig.languageSets[selectedLanguageIndex]
+        if fingerprintMode == .defaultSafari {
+            fp = .defaultSafari()
+        } else {
+            let device = FingerprintConfig.deviceProfiles[selectedDeviceIndex]
+            let isAutoTZ = selectedTimezoneIndex == 0
+            let isAutoLang = selectedLanguageIndex == 0
 
-        var fp = FingerprintConfig.from(device: device)
-        fp.timezone = tz.zone
-        fp.timezoneOffset = tz.offset
-        fp.languages = lang.langs
-        fp.blockWebRTC = blockWebRTC
-        fp.spoofFonts = spoofFonts
-        fp.autoDetectFromIP = isAutoTZ || isAutoLang
+            let tz = isAutoTZ ? FingerprintConfig.timezones[2] : FingerprintConfig.timezones[selectedTimezoneIndex]
+            let lang = isAutoLang ? FingerprintConfig.languageSets[1] : FingerprintConfig.languageSets[selectedLanguageIndex]
+
+            fp = FingerprintConfig.from(device: device)
+            fp.timezone = tz.zone
+            fp.timezoneOffset = tz.offset
+            fp.languages = lang.langs
+            fp.blockWebRTC = blockWebRTC
+            fp.spoofFonts = spoofFonts
+            fp.autoDetectFromIP = isAutoTZ || isAutoLang
+        }
 
         let proxy = ProxyConfig(
             type: proxyEnabled ? proxyType : .none,
