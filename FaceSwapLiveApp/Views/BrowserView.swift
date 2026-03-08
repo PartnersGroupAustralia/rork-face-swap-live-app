@@ -1,35 +1,52 @@
 import SwiftUI
 
-struct BrowserFaceSwapView: View {
+struct BrowserView: View {
+    let profile: BrowserProfile
+    let profileManager: ProfileManager
     @State private var viewModel = BrowserViewModel()
     @FocusState private var isURLBarFocused: Bool
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         VStack(spacing: 0) {
-            navigationBar
+            headerBar
             progressBar
             browserContent
             bottomToolbar
         }
         .background(Color(.systemBackground))
         .sheet(isPresented: $viewModel.showBookmarks) {
-            BookmarksSheet(viewModel: viewModel)
+            BookmarksSheet(profile: profile, profileManager: profileManager, viewModel: viewModel)
         }
-        .sheet(isPresented: $viewModel.showOverlayPanel) {
-            OverlayControlSheet(viewModel: viewModel)
+        .onAppear {
+            if let home = URL(string: profile.homeURL), !profile.homeURL.isEmpty {
+                viewModel.urlText = profile.homeURL
+                viewModel.navigateTo(profile.homeURL)
+            }
         }
     }
 
-    private var navigationBar: some View {
+    private var headerBar: some View {
         HStack(spacing: 8) {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 30, height: 30)
+                    .background(Color(.tertiarySystemFill))
+                    .clipShape(Circle())
+            }
+
             HStack(spacing: 0) {
-                Image(systemName: viewModel.isLoading ? "arrow.clockwise" : (viewModel.isVirtualCamActive ? "video.fill" : "magnifyingglass"))
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(viewModel.isVirtualCamActive ? Color.green : .secondary)
-                    .frame(width: 28)
+                Image(systemName: statusIcon)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(statusColor)
+                    .frame(width: 24)
 
                 TextField("Search or enter URL", text: $viewModel.urlText)
-                    .font(.system(size: 15))
+                    .font(.system(size: 14))
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
                     .keyboardType(.webSearch)
@@ -44,13 +61,13 @@ struct BrowserFaceSwapView: View {
                         viewModel.urlText = ""
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 14))
+                            .font(.system(size: 13))
                             .foregroundStyle(.tertiary)
                     }
                     .padding(.trailing, 4)
                 }
             }
-            .padding(.vertical, 9)
+            .padding(.vertical, 8)
             .padding(.horizontal, 8)
             .background(Color(.tertiarySystemFill))
             .clipShape(.rect(cornerRadius: 10))
@@ -62,21 +79,32 @@ struct BrowserFaceSwapView: View {
                         viewModel.urlText = url.absoluteString
                     }
                 }
-                .font(.system(size: 15))
+                .font(.system(size: 14))
                 .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
         .background(.bar)
         .animation(.spring(duration: 0.25), value: isURLBarFocused)
+    }
+
+    private var statusIcon: String {
+        if viewModel.isLoading { return "arrow.clockwise" }
+        if viewModel.currentURL?.scheme == "https" { return "lock.fill" }
+        return "magnifyingglass"
+    }
+
+    private var statusColor: Color {
+        if viewModel.currentURL?.scheme == "https" { return .green }
+        return .secondary
     }
 
     private var progressBar: some View {
         GeometryReader { geo in
             if viewModel.isLoading {
                 Rectangle()
-                    .fill(Color.accentColor)
+                    .fill(Color(hex: profile.colorHex))
                     .frame(width: geo.size.width * viewModel.estimatedProgress, height: 2)
                     .animation(.linear(duration: 0.2), value: viewModel.estimatedProgress)
             }
@@ -85,41 +113,38 @@ struct BrowserFaceSwapView: View {
     }
 
     private var browserContent: some View {
-        ZStack {
+        Group {
             if viewModel.currentURL != nil {
-                BrowserWebContainer(viewModel: viewModel)
+                AntidetectWebView(profile: profile, viewModel: viewModel)
             } else {
                 startPage
-            }
-
-            if viewModel.isOverlayActive {
-                overlayLayer
             }
         }
     }
 
     private var startPage: some View {
         ScrollView {
-            VStack(spacing: 32) {
-                VStack(spacing: 12) {
-                    Image(systemName: "globe")
-                        .font(.system(size: 48, weight: .thin))
-                        .foregroundStyle(.tertiary)
+            VStack(spacing: 28) {
+                VStack(spacing: 10) {
+                    Text(profile.emoji)
+                        .font(.system(size: 48))
 
-                    Text("FaceSwapLive Browser")
+                    Text(profile.name)
                         .font(.title2.weight(.semibold))
 
-                    Text("Browse any site with virtual cam injection")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark.shield.fill")
+                            .foregroundStyle(.green)
+                        Text("Fingerprint Active")
+                            .foregroundStyle(.secondary)
+                    }
+                    .font(.caption)
                 }
-                .padding(.top, 60)
+                .padding(.top, 48)
 
-                if viewModel.isVirtualCamActive {
-                    virtualCamBanner
-                }
+                fingerprintSummaryCard
 
-                if !viewModel.bookmarks.isEmpty {
+                if !profile.bookmarks.isEmpty {
                     bookmarksGrid
                 }
 
@@ -130,45 +155,66 @@ struct BrowserFaceSwapView: View {
         .scrollDismissesKeyboard(.interactively)
     }
 
-    private var virtualCamBanner: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "checkmark.seal.fill")
-                .foregroundStyle(.green)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Virtual Camera Active")
-                    .font(.subheadline.weight(.semibold))
-                Text(viewModel.virtualCamMode == .replaceAll ? "Replacing all camera feeds" : "Available as selectable device")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+    private var fingerprintSummaryCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Active Fingerprint", systemImage: "cpu")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            let fp = profile.fingerprint
+            VStack(spacing: 0) {
+                infoRow(icon: "desktopcomputer", label: "Device", value: fp.platform)
+                Divider().padding(.leading, 36)
+                infoRow(icon: "globe", label: "Timezone", value: fp.timezone)
+                Divider().padding(.leading, 36)
+                infoRow(icon: "textformat", label: "Language", value: fp.languages.first ?? "en-US")
+                Divider().padding(.leading, 36)
+                infoRow(icon: "eye.slash", label: "WebRTC", value: fp.blockWebRTC ? "Blocked" : "Allowed")
             }
-            Spacer()
+            .background(Color(.secondarySystemGroupedBackground))
+            .clipShape(.rect(cornerRadius: 10))
         }
-        .padding(12)
-        .background(Color.green.opacity(0.1), in: .rect(cornerRadius: 10))
+    }
+
+    private func infoRow(icon: String, label: String, value: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(width: 20)
+            Text(label)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(value)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.primary)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
     }
 
     private var bookmarksGrid: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             Text("Bookmarks")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
-                .padding(.horizontal)
 
             LazyVGrid(columns: [
                 GridItem(.adaptive(minimum: 72), spacing: 16)
             ], spacing: 16) {
-                ForEach(viewModel.bookmarks.prefix(8)) { bookmark in
+                ForEach(profile.bookmarks.prefix(8)) { bookmark in
                     Button {
                         viewModel.urlText = bookmark.urlString
                         viewModel.navigateTo(bookmark.urlString)
                     } label: {
-                        VStack(spacing: 8) {
+                        VStack(spacing: 6) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 12)
                                     .fill(Color(.tertiarySystemFill))
-                                    .frame(width: 56, height: 56)
+                                    .frame(width: 52, height: 52)
                                 Text(String(bookmark.title.prefix(2)).uppercased())
-                                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                                    .font(.system(size: 16, weight: .bold, design: .rounded))
                                     .foregroundStyle(.secondary)
                             }
                             Text(bookmark.displayHost)
@@ -180,45 +226,44 @@ struct BrowserFaceSwapView: View {
                     }
                 }
             }
-            .padding(.horizontal)
         }
     }
 
     private var quickLinks: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             Text("Quick Links")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
 
             VStack(spacing: 0) {
-                quickLinkRow(icon: "camera.viewfinder", title: "Webcam Test", subtitle: "webcamtests.com", url: "https://webcamtests.com/check", tint: .green)
+                quickLinkRow(icon: "hand.raised.fill", title: "Fingerprint Test", subtitle: "fingerprint.com/demo", url: "https://fingerprint.com/demo", tint: .orange)
                 Divider().padding(.leading, 52)
-                quickLinkRow(icon: "video.fill", title: "Google Meet", subtitle: "meet.google.com", url: "https://meet.google.com", tint: .blue)
+                quickLinkRow(icon: "shield.fill", title: "BrowserLeaks", subtitle: "browserleaks.com", url: "https://browserleaks.com", tint: .green)
                 Divider().padding(.leading, 52)
-                quickLinkRow(icon: "bubble.left.and.bubble.right.fill", title: "Discord", subtitle: "discord.com", url: "https://discord.com", tint: .indigo)
+                quickLinkRow(icon: "network", title: "AmIUnique", subtitle: "amiunique.org", url: "https://amiunique.org", tint: .indigo)
                 Divider().padding(.leading, 52)
-                quickLinkRow(icon: "play.rectangle.fill", title: "YouTube", subtitle: "youtube.com", url: "https://youtube.com", tint: .red)
+                quickLinkRow(icon: "shield.lefthalf.filled", title: "CreepJS", subtitle: "abrahamjuliot.github.io/creepjs", url: "https://abrahamjuliot.github.io/creepjs/", tint: .purple)
                 Divider().padding(.leading, 52)
-                quickLinkRow(icon: "gamecontroller.fill", title: "Twitch", subtitle: "twitch.tv", url: "https://twitch.tv", tint: .purple)
+                quickLinkRow(icon: "magnifyingglass", title: "Google", subtitle: "google.com", url: "https://google.com", tint: .blue)
             }
             .background(Color(.secondarySystemGroupedBackground))
             .clipShape(.rect(cornerRadius: 12))
         }
     }
 
-    private func quickLinkRow(icon: String, title: String, subtitle: String, url: String, tint: Color = .accentColor) -> some View {
+    private func quickLinkRow(icon: String, title: String, subtitle: String, url: String, tint: Color) -> some View {
         Button {
             viewModel.urlText = url
             viewModel.navigateTo(url)
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: icon)
-                    .font(.system(size: 16))
+                    .font(.system(size: 14))
                     .foregroundStyle(.white)
-                    .frame(width: 32, height: 32)
-                    .background(tint, in: .rect(cornerRadius: 8))
+                    .frame(width: 30, height: 30)
+                    .background(tint, in: .rect(cornerRadius: 7))
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text(title)
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.primary)
@@ -233,31 +278,9 @@ struct BrowserFaceSwapView: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.tertiary)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
         }
-    }
-
-    private var overlayLayer: some View {
-        Group {
-            if let image = viewModel.sourceImage, viewModel.sourceType == .image {
-                Color.clear
-                    .overlay {
-                        Image(uiImage: image)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .allowsHitTesting(false)
-                    }
-                    .clipped()
-                    .opacity(viewModel.overlayOpacity)
-            } else if let videoURL = viewModel.sourceVideoURL, viewModel.sourceType == .video {
-                LoopingVideoPlayer(url: videoURL)
-                    .opacity(viewModel.overlayOpacity)
-            }
-        }
-        .allowsHitTesting(false)
-        .ignoresSafeArea()
-        .transition(.opacity)
     }
 
     private var bottomToolbar: some View {
@@ -282,28 +305,22 @@ struct BrowserFaceSwapView: View {
 
             Spacer()
 
-            Button { viewModel.showOverlayPanel = true } label: {
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: viewModel.isVirtualCamActive ? "web.camera.fill" : "web.camera")
-                        .font(.system(size: 18))
-                        .foregroundStyle(viewModel.isVirtualCamActive ? Color.green : .primary)
-                        .frame(width: 44, height: 44)
-
-                    if viewModel.isVirtualCamActive {
-                        Circle()
-                            .fill(.green)
-                            .frame(width: 8, height: 8)
-                            .offset(x: -6, y: 8)
-                    }
-                }
+            Button { viewModel.reload() } label: {
+                toolbarIcon("arrow.clockwise")
             }
+            .disabled(viewModel.currentURL == nil)
 
             Spacer()
 
             Button {
-                viewModel.addBookmark()
+                if let url = viewModel.currentURL {
+                    let title = viewModel.pageTitle.isEmpty ? url.host() ?? url.absoluteString : viewModel.pageTitle
+                    let bookmark = Bookmark(title: title, urlString: url.absoluteString)
+                    profileManager.addBookmark(to: profile.id, bookmark: bookmark)
+                }
             } label: {
-                toolbarIcon(viewModel.isCurrentPageBookmarked() ? "bookmark.fill" : "bookmark")
+                let isBookmarked = profile.bookmarks.contains { $0.urlString == viewModel.currentURL?.absoluteString }
+                toolbarIcon(isBookmarked ? "bookmark.fill" : "bookmark")
             }
             .disabled(viewModel.currentURL == nil)
 
@@ -321,7 +338,7 @@ struct BrowserFaceSwapView: View {
 
     private func toolbarIcon(_ name: String) -> some View {
         Image(systemName: name)
-            .font(.system(size: 18))
+            .font(.system(size: 17))
             .foregroundStyle(.primary)
             .frame(width: 44, height: 44)
     }

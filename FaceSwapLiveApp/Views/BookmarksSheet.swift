@@ -1,13 +1,15 @@
 import SwiftUI
 
 struct BookmarksSheet: View {
+    let profile: BrowserProfile
+    let profileManager: ProfileManager
     let viewModel: BrowserViewModel
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         NavigationStack {
             Group {
-                if viewModel.bookmarks.isEmpty {
+                if profile.bookmarks.isEmpty {
                     ContentUnavailableView(
                         "No Bookmarks",
                         systemImage: "bookmark",
@@ -15,7 +17,7 @@ struct BookmarksSheet: View {
                     )
                 } else {
                     List {
-                        ForEach(viewModel.bookmarks) { bookmark in
+                        ForEach(profile.bookmarks) { bookmark in
                             Button {
                                 viewModel.urlText = bookmark.urlString
                                 viewModel.navigateTo(bookmark.urlString)
@@ -45,7 +47,7 @@ struct BookmarksSheet: View {
                         }
                         .onDelete { offsets in
                             for index in offsets {
-                                viewModel.removeBookmark(viewModel.bookmarks[index])
+                                profileManager.removeBookmark(from: profile.id, bookmark: profile.bookmarks[index])
                             }
                         }
                     }
