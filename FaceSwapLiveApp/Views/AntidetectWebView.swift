@@ -30,14 +30,6 @@ struct AntidetectWebView: UIViewRepresentable {
         )
         config.userContentController.addUserScript(spoofScript)
 
-        let escapedUA = profile.fingerprint.userAgent.replacingOccurrences(of: "'", with: "\\'")
-        let uaScript = WKUserScript(
-            source: "Object.defineProperty(navigator,'userAgent',{get:function(){return '\(escapedUA)';},configurable:true});",
-            injectionTime: .atDocumentEnd,
-            forMainFrameOnly: false
-        )
-        config.userContentController.addUserScript(uaScript)
-
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.customUserAgent = profile.fingerprint.userAgent
         webView.allowsBackForwardNavigationGestures = true
