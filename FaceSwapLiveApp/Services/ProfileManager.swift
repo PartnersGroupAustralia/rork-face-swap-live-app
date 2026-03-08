@@ -5,18 +5,19 @@ import WebKit
 final class ProfileManager {
     var profiles: [BrowserProfile] = []
 
-    private let storageKey = "antidetect_profiles_v1"
+    private let storageKey = "antidetect_profiles_v2"
 
     init() {
         loadProfiles()
     }
 
-    func createProfile(name: String, emoji: String, colorHex: String, fingerprint: FingerprintConfig) -> BrowserProfile {
+    func createProfile(name: String, emoji: String, colorHex: String, fingerprint: FingerprintConfig, proxy: ProxyConfig = .empty) -> BrowserProfile {
         let profile = BrowserProfile(
             name: name,
             colorHex: colorHex,
             emoji: emoji,
-            fingerprint: fingerprint
+            fingerprint: fingerprint,
+            proxy: proxy
         )
         profiles.insert(profile, at: 0)
         saveProfiles()
@@ -57,10 +58,22 @@ final class ProfileManager {
         saveProfiles()
     }
 
+    func profile(for id: UUID) -> BrowserProfile? {
+        profiles.first { $0.id == id }
+    }
+
     private func loadProfiles() {
-        guard let data = UserDefaults.standard.data(forKey: storageKey),
-              let decoded = try? JSONDecoder().decode([BrowserProfile].self, from: data) else { return }
-        profiles = decoded
+        if let data = UserDefaults.standard.data(forKey: storageKey),
+           let decoded = try? JSONDecoder().decode([BrowserProfile].self, from: data) {
+            profiles = decoded
+            return
+        }
+        if let data = UserDefaults.standard.data(forKey: "antidetect_profiles_v1"),
+           let decoded = try? JSONDecoder().decode([BrowserProfile].self, from: data) {
+            profiles = decoded
+            saveProfiles()
+            return
+        }
     }
 
     private func saveProfiles() {

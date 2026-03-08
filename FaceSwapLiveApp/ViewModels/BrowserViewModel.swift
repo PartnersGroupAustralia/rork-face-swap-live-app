@@ -12,6 +12,10 @@ final class BrowserViewModel {
     var estimatedProgress: Double = 0
     var pendingNavigationURL: URL?
     var showBookmarks: Bool = false
+    var isFullScreen: Bool = false
+    var showCookieManager: Bool = false
+    var showShareSheet: Bool = false
+    var exportedCookieData: Data?
 
     weak var webView: WKWebView?
 
@@ -44,5 +48,11 @@ final class BrowserViewModel {
         currentURL = nil
         urlText = ""
         webView = nil
+    }
+
+    func toggleFullScreen() {
+        withAnimation(.spring(duration: 0.3)) {
+            isFullScreen.toggle()
+        }
     }
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct BrowserView: View {
     let profile: BrowserProfile
@@ -6,24 +7,86 @@ struct BrowserView: View {
     @State private var viewModel = BrowserViewModel()
     @FocusState private var isURLBarFocused: Bool
     @Environment(\.dismiss) private var dismiss
+    @State private var showCookieSheet: Bool = false
+    @State private var showImportPicker: Bool = false
+    @State private var cookieCount: Int = 0
+    @State private var importMessage: String?
 
     var body: some View {
         VStack(spacing: 0) {
-            headerBar
-            progressBar
+            if !viewModel.isFullScreen {
+                headerBar
+                progressBar
+            }
             browserContent
-            bottomToolbar
+            if !viewModel.isFullScreen {
+                bottomToolbar
+            }
         }
         .background(Color(.systemBackground))
+        .overlay(alignment: .top) {
+            if viewModel.isFullScreen {
+                fullScreenOverlay
+            }
+        }
         .sheet(isPresented: $viewModel.showBookmarks) {
             BookmarksSheet(profile: profile, profileManager: profileManager, viewModel: viewModel)
+        }
+        .sheet(isPresented: $showCookieSheet) {
+            CookieManagerSheet(
+                profile: profile,
+                viewModel: viewModel,
+                cookieCount: $cookieCount,
+                onImport: { showImportPicker = true },
+                onExport: { exportCookies() }
+            )
+        }
+        .sheet(isPresented: $viewModel.showShareSheet) {
+            if let data = viewModel.exportedCookieData {
+                CookieShareSheet(data: data, profileName: profile.name)
+            }
+        }
+        .fileImporter(
+            isPresented: $showImportPicker,
+            allowedContentTypes: [.json],
+            allowsMultipleSelection: false
+        ) { result in
+            handleImport(result)
+        }
+        .alert("Cookies Imported", isPresented: Binding(
+            get: { importMessage != nil },
+            set: { if !$0 { importMessage = nil } }
+        )) {
+            Button("OK") { importMessage = nil }
+        } message: {
+            Text(importMessage ?? "")
         }
         .onAppear {
             if !profile.homeURL.isEmpty, URL(string: profile.homeURL) != nil {
                 viewModel.urlText = profile.homeURL
                 viewModel.navigateTo(profile.homeURL)
             }
+            Task { cookieCount = await CookieManager.cookieCount(for: profile.id) }
         }
+        .statusBarHidden(viewModel.isFullScreen)
+    }
+
+    private var fullScreenOverlay: some View {
+        HStack {
+            Spacer()
+            Button {
+                viewModel.toggleFullScreen()
+            } label: {
+                Image(systemName: "arrow.down.right.and.arrow.up.left")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(8)
+                    .background(.black.opacity(0.5), in: Circle())
+            }
+            .padding(.trailing, 12)
+            .padding(.top, 4)
+        }
+        .transition(.opacity)
     }
 
     private var headerBar: some View {
@@ -139,6 +202,16 @@ struct BrowserView: View {
                             .foregroundStyle(.secondary)
                     }
                     .font(.caption)
+
+                    if profile.proxy.isValid {
+                        HStack(spacing: 6) {
+                            Image(systemName: "network")
+                                .foregroundStyle(.blue)
+                            Text(profile.proxy.summary)
+                                .foregroundStyle(.secondary)
+                        }
+                        .font(.caption)
+                    }
                 }
                 .padding(.top, 48)
 
@@ -170,6 +243,8 @@ struct BrowserView: View {
                 infoRow(icon: "textformat", label: "Language", value: fp.languages.first ?? "en-US")
                 Divider().padding(.leading, 36)
                 infoRow(icon: "eye.slash", label: "WebRTC", value: fp.blockWebRTC ? "Blocked" : "Allowed")
+                Divider().padding(.leading, 36)
+                infoRow(icon: "network", label: "Proxy", value: profile.proxy.isValid ? profile.proxy.summary : "None")
             }
             .background(Color(.secondarySystemGroupedBackground))
             .clipShape(.rect(cornerRadius: 10))
@@ -189,6 +264,7 @@ struct BrowserView: View {
             Text(value)
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(.primary)
+                .lineLimit(1)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
@@ -312,22 +388,31 @@ struct BrowserView: View {
 
             Spacer()
 
-            Button {
-                if let url = viewModel.currentURL {
-                    let title = viewModel.pageTitle.isEmpty ? url.host() ?? url.absoluteString : viewModel.pageTitle
-                    let bookmark = Bookmark(title: title, urlString: url.absoluteString)
-                    profileManager.addBookmark(to: profile.id, bookmark: bookmark)
-                }
-            } label: {
-                let isBookmarked = profile.bookmarks.contains { $0.urlString == viewModel.currentURL?.absoluteString }
-                toolbarIcon(isBookmarked ? "bookmark.fill" : "bookmark")
+            Button { viewModel.toggleFullScreen() } label: {
+                toolbarIcon("arrow.up.left.and.arrow.down.right")
             }
             .disabled(viewModel.currentURL == nil)
 
             Spacer()
 
-            Button { viewModel.showBookmarks = true } label: {
-                toolbarIcon("book")
+            Menu {
+                Button { addBookmark() } label: {
+                    let isBookmarked = profile.bookmarks.contains { $0.urlString == viewModel.currentURL?.absoluteString }
+                    Label(isBookmarked ? "Bookmarked" : "Add Bookmark", systemImage: isBookmarked ? "bookmark.fill" : "bookmark")
+                }
+                .disabled(viewModel.currentURL == nil)
+
+                Button { viewModel.showBookmarks = true } label: {
+                    Label("All Bookmarks", systemImage: "book")
+                }
+
+                Divider()
+
+                Button { showCookieSheet = true } label: {
+                    Label("Cookie Manager", systemImage: "cylinder.split.1x2")
+                }
+            } label: {
+                toolbarIcon("ellipsis")
             }
         }
         .padding(.horizontal, 8)
@@ -341,5 +426,33 @@ struct BrowserView: View {
             .font(.system(size: 17))
             .foregroundStyle(.primary)
             .frame(width: 44, height: 44)
+    }
+
+    private func addBookmark() {
+        guard let url = viewModel.currentURL else { return }
+        let title = viewModel.pageTitle.isEmpty ? url.host() ?? url.absoluteString : viewModel.pageTitle
+        let bookmark = Bookmark(title: title, urlString: url.absoluteString)
+        profileManager.addBookmark(to: profile.id, bookmark: bookmark)
+    }
+
+    private func exportCookies() {
+        Task {
+            guard let data = await CookieManager.exportCookies(for: profile.id, profileName: profile.name) else { return }
+            viewModel.exportedCookieData = data
+            showCookieSheet = false
+            viewModel.showShareSheet = true
+        }
+    }
+
+    private func handleImport(_ result: Result<[URL], Error>) {
+        guard case .success(let urls) = result, let url = urls.first else { return }
+        guard url.startAccessingSecurityScopedResource() else { return }
+        defer { url.stopAccessingSecurityScopedResource() }
+        guard let data = try? Data(contentsOf: url) else { return }
+        Task {
+            let count = await CookieManager.importCookies(data: data, to: profile.id)
+            importMessage = "Successfully imported \(count) cookies."
+            cookieCount = await CookieManager.cookieCount(for: profile.id)
+        }
     }
 }

@@ -1,28 +1,106 @@
 import Foundation
 
-struct FingerprintConfig: Codable, Sendable, Hashable {
-    nonisolated var userAgent: String
-    nonisolated var platform: String
-    nonisolated var vendor: String
-    nonisolated var languages: [String]
-    nonisolated var hardwareConcurrency: Int
-    nonisolated var deviceMemory: Int
-    nonisolated var maxTouchPoints: Int
-    nonisolated var screenWidth: Int
-    nonisolated var screenHeight: Int
-    nonisolated var availWidth: Int
-    nonisolated var availHeight: Int
-    nonisolated var colorDepth: Int
-    nonisolated var pixelRatio: Double
-    nonisolated var timezone: String
-    nonisolated var timezoneOffset: Int
-    nonisolated var webGLVendor: String
-    nonisolated var webGLRenderer: String
-    nonisolated var canvasSeed: Int
-    nonisolated var audioSeed: Int
-    nonisolated var doNotTrack: String
-    nonisolated var blockWebRTC: Bool
-    nonisolated var spoofFonts: Bool
+nonisolated struct FingerprintConfig: Codable, Sendable, Hashable {
+    var userAgent: String
+    var platform: String
+    var vendor: String
+    var languages: [String]
+    var hardwareConcurrency: Int
+    var deviceMemory: Int
+    var maxTouchPoints: Int
+    var screenWidth: Int
+    var screenHeight: Int
+    var availWidth: Int
+    var availHeight: Int
+    var colorDepth: Int
+    var pixelRatio: Double
+    var timezone: String
+    var timezoneOffset: Int
+    var webGLVendor: String
+    var webGLRenderer: String
+    var canvasSeed: Int
+    var audioSeed: Int
+    var doNotTrack: String
+    var blockWebRTC: Bool
+    var spoofFonts: Bool
+    var autoDetectFromIP: Bool
+
+    init(
+        userAgent: String = "",
+        platform: String = "",
+        vendor: String = "Apple Computer, Inc.",
+        languages: [String] = ["en-US", "en"],
+        hardwareConcurrency: Int = 6,
+        deviceMemory: Int = 8,
+        maxTouchPoints: Int = 5,
+        screenWidth: Int = 393,
+        screenHeight: Int = 852,
+        availWidth: Int = 393,
+        availHeight: Int = 852,
+        colorDepth: Int = 32,
+        pixelRatio: Double = 3.0,
+        timezone: String = "America/New_York",
+        timezoneOffset: Int = 300,
+        webGLVendor: String = "Apple Inc.",
+        webGLRenderer: String = "Apple GPU",
+        canvasSeed: Int = Int.random(in: 100000...999999),
+        audioSeed: Int = Int.random(in: 100000...999999),
+        doNotTrack: String = "unspecified",
+        blockWebRTC: Bool = true,
+        spoofFonts: Bool = true,
+        autoDetectFromIP: Bool = false
+    ) {
+        self.userAgent = userAgent
+        self.platform = platform
+        self.vendor = vendor
+        self.languages = languages
+        self.hardwareConcurrency = hardwareConcurrency
+        self.deviceMemory = deviceMemory
+        self.maxTouchPoints = maxTouchPoints
+        self.screenWidth = screenWidth
+        self.screenHeight = screenHeight
+        self.availWidth = availWidth
+        self.availHeight = availHeight
+        self.colorDepth = colorDepth
+        self.pixelRatio = pixelRatio
+        self.timezone = timezone
+        self.timezoneOffset = timezoneOffset
+        self.webGLVendor = webGLVendor
+        self.webGLRenderer = webGLRenderer
+        self.canvasSeed = canvasSeed
+        self.audioSeed = audioSeed
+        self.doNotTrack = doNotTrack
+        self.blockWebRTC = blockWebRTC
+        self.spoofFonts = spoofFonts
+        self.autoDetectFromIP = autoDetectFromIP
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        userAgent = try container.decode(String.self, forKey: .userAgent)
+        platform = try container.decode(String.self, forKey: .platform)
+        vendor = try container.decode(String.self, forKey: .vendor)
+        languages = try container.decode([String].self, forKey: .languages)
+        hardwareConcurrency = try container.decode(Int.self, forKey: .hardwareConcurrency)
+        deviceMemory = try container.decode(Int.self, forKey: .deviceMemory)
+        maxTouchPoints = try container.decode(Int.self, forKey: .maxTouchPoints)
+        screenWidth = try container.decode(Int.self, forKey: .screenWidth)
+        screenHeight = try container.decode(Int.self, forKey: .screenHeight)
+        availWidth = try container.decode(Int.self, forKey: .availWidth)
+        availHeight = try container.decode(Int.self, forKey: .availHeight)
+        colorDepth = try container.decode(Int.self, forKey: .colorDepth)
+        pixelRatio = try container.decode(Double.self, forKey: .pixelRatio)
+        timezone = try container.decode(String.self, forKey: .timezone)
+        timezoneOffset = try container.decode(Int.self, forKey: .timezoneOffset)
+        webGLVendor = try container.decode(String.self, forKey: .webGLVendor)
+        webGLRenderer = try container.decode(String.self, forKey: .webGLRenderer)
+        canvasSeed = try container.decode(Int.self, forKey: .canvasSeed)
+        audioSeed = try container.decode(Int.self, forKey: .audioSeed)
+        doNotTrack = try container.decode(String.self, forKey: .doNotTrack)
+        blockWebRTC = try container.decode(Bool.self, forKey: .blockWebRTC)
+        spoofFonts = try container.decode(Bool.self, forKey: .spoofFonts)
+        autoDetectFromIP = try container.decodeIfPresent(Bool.self, forKey: .autoDetectFromIP) ?? false
+    }
 
     static let deviceProfiles: [DeviceProfile] = [
         DeviceProfile(
@@ -84,6 +162,7 @@ struct FingerprintConfig: Codable, Sendable, Hashable {
     ]
 
     static let timezones: [(label: String, zone: String, offset: Int)] = [
+        ("Auto (Based on IP)", "", 0),
         ("UTC", "UTC", 0),
         ("New York (EST)", "America/New_York", 300),
         ("Chicago (CST)", "America/Chicago", 360),
@@ -97,6 +176,7 @@ struct FingerprintConfig: Codable, Sendable, Hashable {
     ]
 
     static let languageSets: [(label: String, langs: [String])] = [
+        ("Auto (Based on IP)", []),
         ("English (US)", ["en-US", "en"]),
         ("English (UK)", ["en-GB", "en"]),
         ("German", ["de-DE", "de", "en"]),
@@ -111,8 +191,8 @@ struct FingerprintConfig: Codable, Sendable, Hashable {
 
     static func randomized() -> FingerprintConfig {
         let profile = deviceProfiles.randomElement()!
-        let tz = timezones.randomElement()!
-        let lang = languageSets.randomElement() ?? languageSets[0]
+        let tz = timezones.filter { !$0.zone.isEmpty }.randomElement()!
+        let lang = languageSets.filter { !$0.langs.isEmpty }.randomElement() ?? languageSets[1]
 
         return FingerprintConfig(
             userAgent: profile.userAgent,
@@ -136,13 +216,14 @@ struct FingerprintConfig: Codable, Sendable, Hashable {
             audioSeed: Int.random(in: 100000...999999),
             doNotTrack: "unspecified",
             blockWebRTC: true,
-            spoofFonts: true
+            spoofFonts: true,
+            autoDetectFromIP: false
         )
     }
 
     static func from(device: DeviceProfile) -> FingerprintConfig {
-        let tz = timezones.randomElement()!
-        let lang = languageSets.randomElement() ?? languageSets[0]
+        let tz = timezones.filter { !$0.zone.isEmpty }.randomElement()!
+        let lang = languageSets.filter { !$0.langs.isEmpty }.randomElement() ?? languageSets[1]
 
         let vendor: String
         let glVendor: String
@@ -184,7 +265,77 @@ struct FingerprintConfig: Codable, Sendable, Hashable {
             audioSeed: Int.random(in: 100000...999999),
             doNotTrack: "unspecified",
             blockWebRTC: true,
-            spoofFonts: true
+            spoofFonts: true,
+            autoDetectFromIP: false
         )
     }
+
+    static let timezoneToOffset: [String: Int] = [
+        "UTC": 0,
+        "America/New_York": 300,
+        "America/Chicago": 360,
+        "America/Denver": 420,
+        "America/Los_Angeles": 480,
+        "America/Sao_Paulo": 180,
+        "America/Argentina/Buenos_Aires": 180,
+        "America/Mexico_City": 360,
+        "America/Bogota": 300,
+        "America/Lima": 300,
+        "Europe/London": 0,
+        "Europe/Berlin": -60,
+        "Europe/Paris": -60,
+        "Europe/Madrid": -60,
+        "Europe/Rome": -60,
+        "Europe/Amsterdam": -60,
+        "Europe/Moscow": -180,
+        "Europe/Istanbul": -180,
+        "Europe/Warsaw": -60,
+        "Europe/Bucharest": -120,
+        "Asia/Tokyo": -540,
+        "Asia/Shanghai": -480,
+        "Asia/Hong_Kong": -480,
+        "Asia/Seoul": -540,
+        "Asia/Singapore": -480,
+        "Asia/Dubai": -240,
+        "Asia/Kolkata": -330,
+        "Asia/Bangkok": -420,
+        "Asia/Jakarta": -420,
+        "Asia/Taipei": -480,
+        "Australia/Sydney": -660,
+        "Australia/Melbourne": -660,
+        "Pacific/Auckland": -720,
+        "Africa/Cairo": -120,
+        "Africa/Lagos": -60,
+        "Africa/Johannesburg": -120,
+    ]
+
+    static let countryToLanguage: [String: [String]] = [
+        "US": ["en-US", "en"],
+        "GB": ["en-GB", "en"],
+        "CA": ["en-CA", "en"],
+        "AU": ["en-AU", "en"],
+        "DE": ["de-DE", "de", "en"],
+        "FR": ["fr-FR", "fr", "en"],
+        "ES": ["es-ES", "es", "en"],
+        "IT": ["it-IT", "it", "en"],
+        "PT": ["pt-PT", "pt", "en"],
+        "BR": ["pt-BR", "pt", "en"],
+        "JP": ["ja-JP", "ja", "en"],
+        "CN": ["zh-CN", "zh", "en"],
+        "KR": ["ko-KR", "ko", "en"],
+        "RU": ["ru-RU", "ru", "en"],
+        "SA": ["ar-SA", "ar", "en"],
+        "AE": ["ar-AE", "ar", "en"],
+        "IN": ["hi-IN", "hi", "en"],
+        "NL": ["nl-NL", "nl", "en"],
+        "TR": ["tr-TR", "tr", "en"],
+        "PL": ["pl-PL", "pl", "en"],
+        "MX": ["es-MX", "es", "en"],
+        "AR": ["es-AR", "es", "en"],
+        "TH": ["th-TH", "th", "en"],
+        "ID": ["id-ID", "id", "en"],
+        "SG": ["en-SG", "en"],
+        "HK": ["zh-HK", "zh", "en"],
+        "TW": ["zh-TW", "zh", "en"],
+    ]
 }

@@ -1,5 +1,6 @@
 import SwiftUI
 import WebKit
+import Network
 
 struct AntidetectWebView: UIViewRepresentable {
     let profile: BrowserProfile
@@ -11,6 +12,10 @@ struct AntidetectWebView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> WKWebView {
         let dataStore = WKWebsiteDataStore(forIdentifier: profile.id)
+
+        if profile.proxy.isValid {
+            configureProxy(dataStore: dataStore)
+        }
 
         let config = WKWebViewConfiguration()
         config.websiteDataStore = dataStore
@@ -74,6 +79,26 @@ struct AntidetectWebView: UIViewRepresentable {
             viewModel.pendingNavigationURL = nil
             webView.load(URLRequest(url: url))
         }
+    }
+
+    private func configureProxy(dataStore: WKWebsiteDataStore) {
+        let proxy = profile.proxy
+        let endpoint = NWEndpoint.hostPort(
+            host: NWEndpoint.Host(proxy.host),
+            port: NWEndpoint.Port(integerLiteral: UInt16(clamping: proxy.port))
+        )
+
+        let proxyConfig: ProxyConfiguration
+        switch proxy.type {
+        case .socks5:
+            proxyConfig = ProxyConfiguration(socksv5Proxy: endpoint)
+        case .http:
+            proxyConfig = ProxyConfiguration(httpCONNECTProxy: endpoint)
+        case .none:
+            return
+        }
+
+        dataStore.proxyConfigurations = [proxyConfig]
     }
 
     class Coordinator: NSObject, WKUIDelegate, WKNavigationDelegate {

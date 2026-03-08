@@ -77,7 +77,7 @@ struct ProfileListView: View {
             Text("No Profiles Yet")
                 .font(.title2.weight(.semibold))
 
-            Text("Each profile has its own cookies, storage, and unique browser fingerprint. Create one to get started.")
+            Text("Each profile has its own cookies, storage, proxy, and unique browser fingerprint. Create one to get started.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -124,6 +124,17 @@ struct ProfileCard: View {
                         Text(fingerprintSummary)
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                    }
+
+                    if profile.proxy.isValid {
+                        HStack(spacing: 4) {
+                            Image(systemName: "network")
+                                .font(.caption2)
+                                .foregroundStyle(.blue)
+                            Text(profile.proxy.summary)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
                     }
 
                     if let lastUsed = profile.lastUsed {
